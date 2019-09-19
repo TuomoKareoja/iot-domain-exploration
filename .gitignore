@@ -76,11 +76,11 @@ target/
 .ipynb_checkpoints/
 
 # exclude data from source control by default
-/data/clean/*
+/data/raw/*
 /data/interim/*
 /data/predictions/*
 /data/processed/*
-!/data/clean/.gitkeep
+!/data/raw/.gitkeep
 !/data/interim/.gitkeep
 !/data/predictions/.gitkeep
 !/data/processed/.gitkeep

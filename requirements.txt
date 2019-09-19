@@ -13,3 +13,6 @@ sklearn
 matplotlib
 seaborn
 jupyter
+black
+sqlalchemy
+pymysql
