@@ -17,6 +17,6 @@ def load_processed_data(inpath=os.path.join("data", "processed", "data_ready.csv
         [dataframe] -- [The latest version of the processed data]
     """
 
-    data = pd.read_csv(inpath, index_col == ["Date_Time"])
+    data = pd.read_csv(inpath, index_col=["Date_Time"])
 
     return data
