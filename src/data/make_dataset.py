@@ -6,13 +6,8 @@ import logging
 from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
 from dbaccess import fetch_and_save_data
-
-load_dotenv(find_dotenv())
-
-DBUSER = os.getenv("DBUSER")
-DBPASSWORD = os.getenv("DBPASSWORD")
-DBNAME = os.getenv("DBNAME")
-DBHOST = os.getenv("DBHOST")
+from process_data import add_correct_index
+from process_data import add_time_information
 
 
 @click.command()
@@ -33,6 +28,10 @@ def main(input_filepath, output_filepath):
         filename="submeters.csv",
     )
 
+    add_correct_index()
+
+    add_time_information()
+
 
 if __name__ == "__main__":
     log_fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -44,5 +43,10 @@ if __name__ == "__main__":
     # find .env automagically by walking up directories until it's found, then
     # load up the .env entries as environment variables
     load_dotenv(find_dotenv())
+
+    DBUSER = os.getenv("DBUSER")
+    DBPASSWORD = os.getenv("DBPASSWORD")
+    DBNAME = os.getenv("DBNAME")
+    DBHOST = os.getenv("DBHOST")
 
     main()
