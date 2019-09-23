@@ -6,8 +6,7 @@ import logging
 from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
 from dbaccess import fetch_and_save_data
-from process_data import add_correct_index
-from process_data import add_time_information
+from process_data import add_correct_index, add_time_information
 
 
 @click.command()
