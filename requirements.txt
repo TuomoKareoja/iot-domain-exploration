@@ -16,3 +16,6 @@ jupyter
 black
 sqlalchemy
 pymysql
+statsmodels
+pmdarima
+joblib

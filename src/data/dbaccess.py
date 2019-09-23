@@ -32,5 +32,5 @@ def fetch_and_save_data(user, password, host, db, filename):
         SELECT *, 'data2010' as dataset FROM yr_2010
     """
     data = pd.read_sql(con=engine, sql=query)
-    data.to_csv(os.path.join("data", "raw", filename))
+    data.to_csv(os.path.join("data", "raw", filename), index=False)
 
