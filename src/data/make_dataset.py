@@ -6,7 +6,11 @@ import logging
 from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
 from dbaccess import fetch_and_save_data
-from process_data import add_correct_index, add_time_information
+from process_data import (
+    add_correct_index_and_prune,
+    add_time_information,
+    convert_units,
+)
 
 
 @click.command()
@@ -19,6 +23,7 @@ def main(input_filepath, output_filepath):
     logger = logging.getLogger(__name__)
     logger.info("making final data set from raw data")
 
+    logger.info("fetching data from the database")
     fetch_and_save_data(
         user=DBUSER,
         password=DBPASSWORD,
@@ -27,8 +32,13 @@ def main(input_filepath, output_filepath):
         filename="submeters.csv",
     )
 
-    add_correct_index()
+    logger.info("fixing the index and dropping unnecessary columns")
+    add_correct_index_and_prune()
 
+    logger.info("converting columns to matching energy units")
+    convert_units()
+
+    logger.info("adding column for details about timeperiod")
     add_time_information()
 
 

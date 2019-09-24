@@ -7,7 +7,7 @@ import pandas as pd
 from pandas.tseries.holiday import USFederalHolidayCalendar as holiday_calendar
 
 
-def add_correct_index(
+def add_correct_index_and_prune(
     inpath=os.path.join("data", "raw", "submeters.csv"),
     outpath=os.path.join("data", "interim", "data_indexed.csv"),
 ):
@@ -25,19 +25,41 @@ def add_correct_index(
 
     # broadening the index
     data = data.asfreq("min")
-    data.drop(columns=["id"], inplace=True)
+
+    # dropping columns not necessary for the analysis
+    data.drop(
+        columns=["id", "dataset", "Global_reactive_power", "Voltage"], inplace=True
+    )
+
+    data.to_csv(outpath)
+
+
+def convert_units(
+    inpath=os.path.join("data", "interim", "data_indexed.csv"),
+    outpath=os.path.join("data", "interim", "data_indexed_converted.csv"),
+):
+    """Changes global active power units (kilowatt-minutes) to match those of submeters (watt-hours)
+
+    Keyword Arguments:
+        inpath {path} -- [path for incoming data] (default: {os.path.join("data", "interim", "data_indexed.csv")})
+        outpath {path} -- [path for where to save data] (default: {os.path.join("data", "interim", "data_indexed_converted.csv")})
+    """
+    data = pd.read_csv(inpath, parse_dates=["Date_Time"], index_col="Date_Time")
+
+    # changing global active power units from kilowat minutes to kilowat hours
+    data["Global_active_power"] = data["Global_active_power"].multiply(1000).divide(60)
 
     data.to_csv(outpath)
 
 
 def add_time_information(
-    inpath=os.path.join("data", "interim", "data_indexed.csv"),
+    inpath=os.path.join("data", "interim", "data_indexed_converted.csv"),
     outpath=os.path.join("data", "processed", "data_ready.csv"),
 ):
     """Adds columns for month, weekday, hour and holiday
 
     Keyword Arguments:
-        inpath {path} -- [path for incoming data] (default: {os.path.join("data", "interim", "data_indexed.csv")})
+        inpath {path} -- [path for incoming data] (default: {os.path.join("data", "interim", "data_indexed_converted.csv")})
         outpath {path} -- [path for where to save data] (default: {os.path.join("data", "processed", "data_ready.csv")})
 
     """
