@@ -56,7 +56,7 @@ def add_time_information(
     inpath=os.path.join("data", "interim", "data_indexed_converted.csv"),
     outpath=os.path.join("data", "processed", "data_ready.csv"),
 ):
-    """Adds columns for month, weekday, hour and holiday
+    """Adds columns for year, month, weekday, hour and holiday
 
     Keyword Arguments:
         inpath {path} -- [path for incoming data] (default: {os.path.join("data", "interim", "data_indexed_converted.csv")})
@@ -66,6 +66,7 @@ def add_time_information(
 
     data = pd.read_csv(inpath, parse_dates=["Date_Time"], index_col="Date_Time")
 
+    data["year"] = data.index.year
     data["month"] = data.index.month_name()
     data["weekday"] = data.index.weekday_name
     data["hour"] = data.index.hour

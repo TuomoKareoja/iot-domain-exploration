@@ -38,7 +38,7 @@ def main(input_filepath, output_filepath):
     logger.info("converting columns to matching energy units")
     convert_units()
 
-    logger.info("adding column for details about timeperiod")
+    logger.info("adding timeperiod columns")
     add_time_information()
 
 
