@@ -34,6 +34,10 @@ def add_correct_index_and_prune(
         columns=["id", "dataset", "Global_reactive_power", "Voltage"], inplace=True
     )
 
+    # resampling the data to 10 min bins to make processing faster
+    # for this analysis we lose no meaning details for doing this
+    data = data.resample("10T").mean()
+
     data.to_csv(outpath)
 
 
