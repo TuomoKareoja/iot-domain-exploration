@@ -124,3 +124,25 @@ data_missing.plot.bar(figsize=(12,9))
 
 # If there is need to add in missing values. We have to keep these
 # problems in mind
+
+#%%
+
+# Are there periods in Global active power that seem unrealistic
+
+data_raw_daily = data_raw.resample('D').mean()
+ax = sns.lineplot(x=data_raw_daily.index, y=data_raw_daily.Global_active_power)
+ax.set_ylim(bottom=0)
+plt.show()
+
+# the beginning of 2017 seems too high.
+
+#%%
+
+# What are the ends of the index?
+data_raw.index.min()
+data_raw.index.max()
+
+# And we can see that the index extends
+# to 2006 december and 2011 october. We would want to keep only full years
+# to make the analysis easier, as then we don't have to keep partial
+# years in mind when plotting yearly trends

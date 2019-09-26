@@ -26,6 +26,9 @@ def add_correct_index_and_prune(
     # broadening the index
     data = data.asfreq("min")
 
+    # keeping only full years of data
+    data = data["2007":"2010"]
+
     # dropping columns not necessary for the analysis
     data.drop(
         columns=["id", "dataset", "Global_reactive_power", "Voltage"], inplace=True
