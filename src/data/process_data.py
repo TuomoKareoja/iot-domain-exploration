@@ -37,11 +37,11 @@ def add_correct_index_and_prune(
     data.to_csv(outpath)
 
 
-def convert_units(
+def convert_units_and_add_unmeasured_consumption(
     inpath=os.path.join("data", "interim", "data_indexed.csv"),
     outpath=os.path.join("data", "interim", "data_indexed_converted.csv"),
 ):
-    """Changes global active power units (kilowatt-minutes) to match those of submeters (watt-hours)
+    """Changes global active power units (kilowatt-minutes) to match those of submeters (watt-hours) and adds columns for consumption not measured by submeters
 
     Keyword Arguments:
         inpath {path} -- [path for incoming data] (default: {os.path.join("data", "interim", "data_indexed.csv")})
@@ -51,6 +51,14 @@ def convert_units(
 
     # changing global active power units from kilowat minutes to kilowat hours
     data["Global_active_power"] = data["Global_active_power"].multiply(1000).divide(60)
+
+    # calculating the power consumption not measured by submeters
+    data["unmeasured"] = (
+        data["Global_active_power"]
+        .subtract(data["Sub_metering_1"])
+        .subtract(data["Sub_metering_2"])
+        .subtract(data["Sub_metering_3"])
+    )
 
     data.to_csv(outpath)
 

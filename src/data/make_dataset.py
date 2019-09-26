@@ -9,7 +9,7 @@ from dbaccess import fetch_and_save_data
 from process_data import (
     add_correct_index_and_prune,
     add_time_information,
-    convert_units,
+    convert_units_and_add_unmeasured_consumption,
 )
 
 
@@ -35,8 +35,10 @@ def main(input_filepath, output_filepath):
     logger.info("fixing the index and dropping unnecessary columns")
     add_correct_index_and_prune()
 
-    logger.info("converting columns to matching energy units")
-    convert_units()
+    logger.info(
+        "converting columns to matching energy units and adding unmeasured consumption"
+    )
+    convert_units_and_add_unmeasured_consumption()
 
     logger.info("adding timeperiod columns")
     add_time_information()
