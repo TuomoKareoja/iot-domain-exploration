@@ -94,3 +94,10 @@ target/
 
 # Mypy cache
 .mypy_cache/
+
+# latex
+*.aux
+*.synctex.gz
+*.log
+*.fls
+*.fdb_latexmk
