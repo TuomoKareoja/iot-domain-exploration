@@ -4,7 +4,6 @@ import os
 
 import numpy as np
 import pandas as pd
-from pandas.tseries.holiday import USFederalHolidayCalendar as holiday_calendar
 
 
 def add_correct_index_and_prune(
@@ -79,6 +78,10 @@ def add_time_information(
 
     """
 
+    import holidays
+
+    fra_holidays = holidays.CountryHoliday("FRA")
+
     data = pd.read_csv(inpath, parse_dates=["Date_Time"], index_col="Date_Time")
 
     data["year"] = data.index.year
@@ -86,8 +89,8 @@ def add_time_information(
     data["weekday"] = data.index.weekday_name
     data["hour"] = data.index.hour
 
-    cal = holiday_calendar()
-    holidays = cal.holidays(start=data.index.min(), end=data.index.max())
-    data["holiday"] = data.index.isin(holidays)
+    data["date"] = data.index.date
+    data["holiday"] = data["date"].apply(lambda x: x in fra_holidays)
+    data.drop(columns=["date"], inplace=True)
 
     data.to_csv(outpath)
