@@ -15,7 +15,6 @@ def add_correct_index_and_prune(
     Keyword Arguments:
         inpath {path} -- [path for incoming data] (default: {os.path.join("data", "raw", "submeters.csv")})
         outpath {path} -- [path for where to save data] (default: {os.path.join("data", "interim", "data_indexed.csv")})
-
     """
 
     data = pd.read_csv(inpath, parse_dates=[["Date", "Time"]])
@@ -68,14 +67,13 @@ def convert_units_and_add_unmeasured_consumption(
 
 def add_time_information(
     inpath=os.path.join("data", "interim", "data_indexed_converted.csv"),
-    outpath=os.path.join("data", "processed", "data_ready.csv"),
+    outpath=os.path.join("data", "interim", "data_indexed_converted_timed.csv"),
 ):
     """Adds columns for year, month, weekday, hour and holiday
 
     Keyword Arguments:
         inpath {path} -- [path for incoming data] (default: {os.path.join("data", "interim", "data_indexed_converted.csv")})
-        outpath {path} -- [path for where to save data] (default: {os.path.join("data", "processed", "data_ready.csv")})
-
+        outpath {path} -- [path for where to save data] (default: {os.path.join("data", "interim", "data_indexed_converted_timed.csv")})
     """
 
     import holidays
@@ -95,4 +93,55 @@ def add_time_information(
 
     data.to_csv(outpath)
 
-def clean_weather_dataset(inpath=os.path.join('data', 'external', ''), outpath)
+
+def convert_and_clean_weather_dataset(
+    inpath=os.path.join("data", "external", "weather.csv"),
+    outpath=os.path.join("data", "interim", "weather_pruned_converted.csv"),
+):
+    """Processes weather data. Drops unnecessary columns, converts temperature units to celsius, fills in missing values
+
+    Keyword Arguments:
+        inpath {string} -- Path to raw weather data (default: {os.path.join("data", "external", "weather.csv")})
+        outpath {string} -- Path for processed weather data (default: {os.path.join("data", "interim", "weather_pruned_converted.csv")})
+    """
+    data = pd.read_csv(inpath, parse_dates=["time"], index_col="time")
+
+    # limiting timeseries to only 200-2010
+    data = data["2007":"2010"]
+
+    # dropping unnecessary columns
+    data.drop(columns=["precipAccumulation", "windGust"])
+
+    # if precipitation type is null = clear
+    data["precipType"].fillna("Clear", inplace=True)
+
+    # linear interpolation for numeric values with missing values
+    for column in ["cloudCover", "precipIntensity", "windGust"]:
+        data[column].interpolate(inplace=True)
+
+    # convertint temperature from Fahrenheit to Celsius
+    data["apparentTemperature"] = data["apparentTemperature"].subtract(32).divide(1.8)
+    data["temperature"] = data["temperature"].subtract(32).divide(1.8)
+
+    # renaming index to match electricity use data
+    data.index.names = ["Date_Time"]
+
+    data.to_csv(outpath)
+
+
+def combine_datasets(
+    inpaths=[
+        os.path.join("data", "interim", "data_indexed_converted_timed.csv"),
+        os.path.join("data", "interim", "weather_pruned_converted.csv"),
+    ],
+    outpath=os.path.join("data", "processed", "data_ready.csv"),
+):
+    datasets = []
+    for path in inpaths:
+        df = pd.read_csv(path)
+        datasets.append(df)
+
+    # concat by columns = full outer join by datetimeindex
+    data = pd.concat(datasets, axis=1)
+
+    data.to_csv(outpath, index=False)
