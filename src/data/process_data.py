@@ -116,14 +116,14 @@ def convert_and_clean_weather_dataset(
     data["precipType"].fillna("clear", inplace=True)
 
     # linear interpolation for numeric values with missing values
-    for column in ["cloudCover", "precipIntensity", "windGust"]:
+    for column in ["cloudCover", "precipIntensity"]:
         data[column].interpolate(inplace=True)
 
     # convertint temperature from Fahrenheit to Celsius
     data["apparentTemperature"] = data["apparentTemperature"].subtract(32).divide(1.8)
     data["temperature"] = data["temperature"].subtract(32).divide(1.8)
 
-    # renaming index to match electricity use data
+    # renaming index to match electricity use datta
     data.index.names = ["Date_Time"]
 
     data.to_csv(outpath)
