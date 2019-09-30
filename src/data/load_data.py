@@ -21,4 +21,7 @@ def load_processed_data(inpath=os.path.join("data", "processed", "data_ready.csv
         inpath, parse_dates=["Date_Time"], index_col=["Date_Time"], low_memory=False
     )
 
+    # make the data hourly
+    data = data.asfreq("H")
+
     return data

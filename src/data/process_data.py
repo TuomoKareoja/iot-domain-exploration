@@ -106,7 +106,7 @@ def convert_and_clean_weather_dataset(
     """
     data = pd.read_csv(inpath, parse_dates=["time"], index_col="time")
 
-    # limiting timeseries to only 200-2010
+    # limiting timeseries to only 2007-2010
     data = data["2007":"2010"]
 
     # dropping unnecessary columns
@@ -138,10 +138,16 @@ def combine_datasets(
 ):
     datasets = []
     for path in inpaths:
-        df = pd.read_csv(path)
+        df = pd.read_csv(path, index_col=["Date_Time"], parse_dates=["Date_Time"])
         datasets.append(df)
 
     # concat by columns = full outer join by datetimeindex
     data = pd.concat(datasets, axis=1)
 
-    data.to_csv(outpath, index=False)
+    # dropping rows that don't have a match in electricity data
+    data.dropna(subset=["hour"], inplace=True)
+
+    # make year and hour integers
+    data[["hour", "year"]] = data[["hour", "year"]].astype(int)
+
+    data.to_csv(outpath)

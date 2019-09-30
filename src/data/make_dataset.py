@@ -25,14 +25,14 @@ def main(input_filepath, output_filepath):
     logger = logging.getLogger(__name__)
     logger.info("making final data set from raw data")
 
-    # logger.info("fetching data from the database")
-    # fetch_electricity_data(
-    #     user=DBUSER,
-    #     password=DBPASSWORD,
-    #     db=DBNAME,
-    #     host=DBHOST,
-    #     filename="submeters.csv",
-    # )
+    logger.info("fetching data from the database")
+    fetch_electricity_data(
+        user=DBUSER,
+        password=DBPASSWORD,
+        db=DBNAME,
+        host=DBHOST,
+        filename="submeters.csv",
+    )
 
     logger.info("fixing the index and dropping unnecessary columns")
     add_correct_index_and_prune()
@@ -48,7 +48,7 @@ def main(input_filepath, output_filepath):
     logger.info("cleaning weather data")
     convert_and_clean_weather_dataset()
 
-    logger.info("combining electricty use data to weather information")
+    logger.info("combining electricity use data to weather information")
     combine_datasets()
 
 
