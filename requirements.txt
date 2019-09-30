@@ -19,5 +19,4 @@ pymysql
 statsmodels
 pmdarima
 joblib
-beautifulsoup4
 holidays

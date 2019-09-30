@@ -5,8 +5,8 @@ import click
 import logging
 from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
-from dbaccess import fetch_and_save_data
-from process_data import (
+from src.data.fetch_data import fetch_electricity_data
+from src.data.process_data import (
     add_correct_index_and_prune,
     add_time_information,
     convert_units_and_add_unmeasured_consumption,
@@ -24,7 +24,7 @@ def main(input_filepath, output_filepath):
     logger.info("making final data set from raw data")
 
     logger.info("fetching data from the database")
-    fetch_and_save_data(
+    fetch_electricity_data(
         user=DBUSER,
         password=DBPASSWORD,
         db=DBNAME,

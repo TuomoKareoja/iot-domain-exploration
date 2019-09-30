@@ -27,6 +27,10 @@ requirements: test_environment
 data: requirements
 	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw data/processed
 
+## fetch data from DarkSky API (only 1000 requests per hour for free account!).
+weather: requirements
+	$(PYTHON_INTERPRETER) src/data/make_weather_dataset.py 2016-01-01 2011-12-31
+
 ## Delete all compiled Python files
 clean:
 	find . -type f -name "*.py[co]" -delete
