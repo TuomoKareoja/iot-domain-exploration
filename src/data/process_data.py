@@ -110,10 +110,10 @@ def convert_and_clean_weather_dataset(
     data = data["2007":"2010"]
 
     # dropping unnecessary columns
-    data.drop(columns=["precipAccumulation", "windGust"])
+    data.drop(columns=["precipAccumulation", "windGust"], inplace=True)
 
     # if precipitation type is null = clear
-    data["precipType"].fillna("Clear", inplace=True)
+    data["precipType"].fillna("clear", inplace=True)
 
     # linear interpolation for numeric values with missing values
     for column in ["cloudCover", "precipIntensity", "windGust"]:
