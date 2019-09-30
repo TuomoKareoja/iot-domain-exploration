@@ -16,7 +16,7 @@ sns.set(style="whitegrid", color_codes=True)
 #%%
 
 # load data
-weather_path = os.path.join("data", "external", "weather_2006-01-01_2011-12-31.csv")
+weather_path = os.path.join("data", "external", "weather.csv")
 data = pd.read_csv(weather_path, index_col=["time"], parse_dates=["time"])
 data.head()
 
@@ -29,7 +29,7 @@ data.isnull().sum()
 
 #%%
 
-# is preciptype missing when there is rain
+# is precipitation type missing when there is rain?
 data.query("precipIntensity > 0").precipType.isnull().sum()
 
 # no missing values when actually raining
@@ -144,3 +144,18 @@ plt.show()
 # looks ok. Apparent temperature differences are bigger than actual ones
 
 #%%
+
+data.drop(columns=["apparentTemperature", "temperature"], inplace=True)
+
+#%%
+
+# heatmaps
+corr_matrix = data.select_dtypes(include=["float64"]).corr()
+
+sns.set(rc={"figure.figsize": (11.7, 8.27)})
+sns.heatmap(corr_matrix, annot=True, cmap="Reds")
+
+# temperatures and dew point are highly correlated. This might pose problems in the analysis.
+# Maybe we should just keep the apparent temperature because it includes the combined information
+# of dew point and temperature?
+
