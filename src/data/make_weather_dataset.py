@@ -16,12 +16,7 @@ def main(date_start, date_end):
     """
     logger = logging.getLogger(__name__)
     logger.info("fetching weather data")
-    fetch_weather_data(
-        date_start=date_start,
-        date_end=date_end,
-        filename="weather_" + date_start + "_" + date_end + ".csv",
-        api_key=DARKSKYKEY,
-    )
+    fetch_weather_data(date_start=date_start, date_end=date_end, api_key=DARKSKYKEY)
 
 
 if __name__ == "__main__":

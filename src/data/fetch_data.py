@@ -37,14 +37,14 @@ def fetch_electricity_data(user, password, host, db, filename):
     data.to_csv(os.path.join("data", "raw", filename), index=False)
 
 
-def fetch_weather_data(date_start, date_end, filename, api_key):
+def fetch_weather_data(date_start, date_end, api_key, filename="weather.csv"):
     """Fetches hourly Sceaux weather data for date range from DarkSky API
 
     Arguments:
         date_start {string} -- first date for weather (format YYYY-MM-DD)
         date_end {string} -- last date for weather (format YYYY-MM-DD)
-        filename {string} -- filename for outcome. Remember .csv!
         api_key {string} -- DarkSky API key
+        filename {string} -- filename for outcome. Remember .csv! (default: weather.csv)
     """
     frames = []
     for date in pd.date_range(start=date_start, end=date_end):
