@@ -4,6 +4,7 @@ import os
 
 import numpy as np
 import pandas as pd
+from fbprophet import Prophet
 
 
 def add_correct_index_and_prune(
@@ -26,7 +27,14 @@ def add_correct_index_and_prune(
 
     # dropping columns not necessary for the analysis
     data.drop(
-        columns=["id", "dataset", "Global_reactive_power", "Voltage"], inplace=True
+        columns=[
+            "id",
+            "dataset",
+            "Global_reactive_power",
+            "Global_intensity",
+            "Voltage",
+        ],
+        inplace=True,
     )
 
     # resampling the data to one hour bins to make processing faster
@@ -91,6 +99,47 @@ def add_time_information(
     data.to_csv(outpath)
 
 
+def fill_missing_with_prophet(
+    columns_to_fill,
+    inpath=os.path.join("data", "interim", "data_indexed_converted_timed.csv"),
+    outpath=os.path.join("data", "interim", "data_indexed_converted_timed_filled.csv"),
+):
+    """Replaces missing values from insample predictions from a Prophet model
+
+    Arguments:
+        columns_to_fill {list} -- Columns to fill with a model
+
+    Keyword Arguments:
+        inpath {string} -- Path to raw weather data (default: {os.path.join("data", "external", "data_indexed_converted_timed.csv")})
+        outpath {string} -- Path for processed weather data (default: {os.path.join("data", "interim", "data_indexed_converted_timed_filled.csv")})
+    """
+    data = pd.read_csv(inpath, parse_dates=["Date_Time"], index_col="Date_Time")
+
+    for column in columns_to_fill:
+
+        data_prophet = data[column].reset_index(level=0)
+        data_prophet.columns = ["ds", "y"]
+
+        m = Prophet()
+        m.fit(data_prophet)
+        # predicting just the insample
+        future = m.make_future_dataframe(periods=0, freq="H")
+        forecast = m.predict(future)
+        forecast["yhat"] = np.where(forecast["yhat"] < 0, 0, forecast["yhat"])
+        forecast.set_index("ds", inplace=True)
+        forecast.index.names = ["Date_Time"]
+        # we only need the predictions and index
+        forecast = forecast[["yhat"]]
+        # joining by indices
+        data = data.join(forecast)
+        # replacing missing with the prediction
+        data[column].fillna(data["yhat"], inplace=True)
+        # dropping the predictions so that they wont' interfere with futher joins
+        data.drop(columns=["yhat"], inplace=True)
+
+    data.to_csv(outpath)
+
+
 def convert_and_clean_weather_dataset(
     inpath=os.path.join("data", "external", "weather.csv"),
     outpath=os.path.join("data", "interim", "weather_pruned_converted.csv"),
@@ -125,7 +174,7 @@ def convert_and_clean_weather_dataset(
 
 def combine_datasets(
     inpaths=[
-        os.path.join("data", "interim", "data_indexed_converted_timed.csv"),
+        os.path.join("data", "interim", "data_indexed_converted_timed_filled.csv"),
         os.path.join("data", "interim", "weather_pruned_converted.csv"),
     ],
     outpath=os.path.join("data", "processed", "data_ready.csv"),

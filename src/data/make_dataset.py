@@ -9,6 +9,7 @@ from src.data.fetch_data import fetch_electricity_data
 from src.data.process_data import (
     add_correct_index_and_prune,
     add_time_information,
+    fill_missing_with_prophet,
     convert_units_and_add_unmeasured_consumption,
     convert_and_clean_weather_dataset,
     combine_datasets,
@@ -44,6 +45,17 @@ def main(input_filepath, output_filepath):
 
     logger.info("adding timeperiod columns")
     add_time_information()
+
+    logger.info("Filling missing values with Prophet model")
+    fill_missing_with_prophet(
+        columns_to_fill=[
+            "Global_active_power",
+            "Sub_metering_1",
+            "Sub_metering_2",
+            "Sub_metering_3",
+            "unmeasured",
+        ]
+    )
 
     logger.info("cleaning weather data")
     convert_and_clean_weather_dataset()

@@ -22,6 +22,8 @@ endif
 requirements: test_environment
 	$(PYTHON_INTERPRETER) -m pip install -U pip setuptools wheel
 	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
+	conda install pystan
+	conda install -c conda-forge fbprophet
 
 ## Make Dataset
 data: requirements
