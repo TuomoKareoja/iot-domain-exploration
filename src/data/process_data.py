@@ -24,9 +24,6 @@ def add_correct_index_and_prune(
     # broadening the index
     data = data.asfreq("min")
 
-    # keeping only full years of data
-    data = data["2007":"2010"]
-
     # dropping columns not necessary for the analysis
     data.drop(
         columns=["id", "dataset", "Global_reactive_power", "Voltage"], inplace=True
@@ -106,9 +103,6 @@ def convert_and_clean_weather_dataset(
     """
     data = pd.read_csv(inpath, parse_dates=["time"], index_col="time")
 
-    # limiting timeseries to only 2007-2010
-    data = data["2007":"2010"]
-
     # dropping unnecessary columns
     data.drop(columns=["precipAccumulation", "windGust"], inplace=True)
 
@@ -123,7 +117,7 @@ def convert_and_clean_weather_dataset(
     data["apparentTemperature"] = data["apparentTemperature"].subtract(32).divide(1.8)
     data["temperature"] = data["temperature"].subtract(32).divide(1.8)
 
-    # renaming index to match electricity use datta
+    # renaming index to match electricity use data
     data.index.names = ["Date_Time"]
 
     data.to_csv(outpath)
