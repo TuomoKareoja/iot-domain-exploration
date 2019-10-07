@@ -105,6 +105,43 @@ def compare_models(data, variable, test_size):
     forecast_plot_holiday = m_holiday.plot(forecast_holiday)
     component_plot_holiday = m_holiday.plot_components(forecast_holiday)
 
+    m_temp = Prophet()
+    m_temp.add_regressor("temperature")
+    m_temp.add_regressor("temperature2")
+    m_temp.add_regressor("temperature_lag")
+    m_temp.add_regressor("temperature2_lag")
+    df_train["temperature"] = data["temperature"][:test_split].to_numpy()
+    df_train["temperature2"] = df_train["temperature"] ** 2
+    df_train["temperature_lag"] = df_train["temperature"].shift(
+        1, fill_value=df_train["temperature"].mean()
+    )
+    df_train["temperature2_lag"] = df_train["temperature2"].shift(
+        1, fill_value=df_train["temperature"].mean() ** 2
+    )
+    m_temp.fit(df_train)
+    future_temp = m_temp.make_future_dataframe(periods=test_size, freq="H")
+    future_temp["temperature"] = data["temperature"][-len(future_temp) :].to_numpy()
+    future_temp["temperature2"] = future_temp["temperature"] ** 2
+    future_temp["temperature_lag"] = future_temp["temperature"].shift(
+        1, fill_value=future_temp["temperature"].mean()
+    )
+    future_temp["temperature2_lag"] = future_temp["temperature2"].shift(
+        1, fill_value=future_temp["temperature"].mean() ** 2
+    )
+    forecast_temp = m_temp.predict(future_temp)
+    # limiting low predictions to zero
+    forecast_temp["yhat"] = np.where(
+        forecast_temp["yhat"] < 0, 0, forecast_temp["yhat"]
+    )
+    forecast_temp["yhat_lower"] = np.where(
+        forecast_temp["yhat_lower"] < 0, 0, forecast_temp["yhat_lower"]
+    )
+    forecast_temp["yhat_upper"] = np.where(
+        forecast_temp["yhat_upper"] < 0, 0, forecast_temp["yhat_upper"]
+    )
+    forecast_plot_temp = m_temp.plot(forecast_temp)
+    component_plot_temp = m_temp.plot_components(forecast_temp)
+
     # calculate rmse
 
     df_test.y.describe()
@@ -122,6 +159,10 @@ def compare_models(data, variable, test_size):
     print(
         "Holiday Prophet: ",
         mean_squared_error(df_test.y, forecast_holiday.yhat[test_split:]),
+    )
+    print(
+        "Temperature Prophet: ",
+        mean_squared_error(df_test.y, forecast_temp.yhat[test_split:]),
     )
 
 
