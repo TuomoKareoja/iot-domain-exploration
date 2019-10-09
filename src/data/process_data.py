@@ -5,6 +5,8 @@ import os
 import numpy as np
 import pandas as pd
 from fbprophet import Prophet
+from pandas.tseries.offsets import MonthEnd
+from datetime import datetime, timedelta
 
 
 def add_correct_index_and_prune(
@@ -179,6 +181,12 @@ def combine_datasets(
     ],
     outpath=os.path.join("data", "processed", "data_ready.csv"),
 ):
+    """Combines electricity use and weather data
+    
+    Keyword Arguments:
+        inpaths {list} -- list of paths to electricity and weather data (default: {[os.path.join("data", "interim", "data_indexed_converted_timed_filled.csv"),os.path.join("data", "interim", "weather_pruned_converted.csv"),]})
+        outpath {string} -- Path for combined dataset (default: {os.path.join("data", "processed", "data_ready.csv")})
+    """
     datasets = []
     for path in inpaths:
         df = pd.read_csv(path, index_col=["Date_Time"], parse_dates=["Date_Time"])
@@ -194,3 +202,81 @@ def combine_datasets(
     data[["hour", "year"]] = data[["hour", "year"]].astype(int)
 
     data.to_csv(outpath)
+
+
+def make_tableau_dataset(
+    inpath=os.path.join("data", "processed", "data_ready.csv"),
+    outpath=os.path.join("data", "processed", "data_ready_tableau.csv"),
+):
+    """Creates a csv file to use in Tableau dashboard
+    
+    Keyword Arguments:
+        inpath {string} -- Path to the last iteration of data (default: {os.path.join("data", "processed", "data_ready.csv")})
+        outpath {string} -- Path to output file (default: {os.path.join("data", "processed", "data_ready_tableau.csv")})
+    """
+
+    # remove total energy use and all weather information
+    df = pd.read_csv(inpath, index_col=["Date_Time"], parse_dates=["Date_Time"])
+    df = df[["Sub_metering_1", "Sub_metering_2", "Sub_metering_3", "unmeasured"]]
+    columns = ["Kitchen", "Laundry Room", "Heating and Air Conditioning", "Other"]
+    df.columns = columns
+
+    last_day = df.index[-1]
+    month_end = last_day + MonthEnd(1)
+    month_end = month_end.replace(hour=23)
+    diff = month_end - last_day
+    hours_to_predict = int(diff.total_seconds() / 3600)
+
+    # add predictions for all submeters with a predictions up to full month
+
+    index = pd.date_range(
+        last_day + timedelta(hours=1), periods=hours_to_predict, freq="H"
+    )
+    predictions_df = pd.DataFrame(index=index, columns=columns)
+    predictions_df.index.name = "Date_Time"
+
+    for column in columns:
+
+        data_prophet = df[column].reset_index(level=0)
+        data_prophet.columns = ["ds", "y"]
+
+        m = Prophet()
+        m.fit(data_prophet)
+        future = m.make_future_dataframe(periods=hours_to_predict, freq="H")
+        forecast = m.predict(future)
+        predictions_df[column] = forecast["yhat"][-hours_to_predict:]
+
+    df["prediction"] = False
+    predictions_df["prediction"] = True
+
+    df = pd.concat([df, predictions_df])
+
+    # Add boolean column for current month and last month
+    df["current_month"] = np.where(
+        (df.index.year == last_day.year) & (df.index.month == last_day.month),
+        True,
+        False,
+    )
+    df["last_month"] = np.where(
+        (
+            (df.index.year == last_day.year)
+            & (df.index.month == last_day.month - 1)
+            & (last_day.month != 1)
+        )
+        | (
+            (df.index.year == last_day.year - 1)
+            & (df.index.month == 12)
+            & (last_day.month == 1)
+        ),
+        True,
+        False,
+    )
+
+    df.reset_index(level=0, inplace=True)
+    df = df.melt(
+        id_vars=["Date_Time", "prediction", "current_month", "last_month"],
+        var_name="measure",
+        value_name="Value",
+    )
+
+    df.to_csv(outpath, index=False)
