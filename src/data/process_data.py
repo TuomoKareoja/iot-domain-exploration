@@ -252,12 +252,12 @@ def make_tableau_dataset(
     df = pd.concat([df, predictions_df])
 
     # Add boolean column for current month and last month
-    df["current_month"] = np.where(
+    df["month"] = np.where(
         (df.index.year == last_day.year) & (df.index.month == last_day.month),
-        True,
-        False,
+        'Current Month',
+        '',
     )
-    df["last_month"] = np.where(
+    df["month"] = np.where(
         (
             (df.index.year == last_day.year)
             & (df.index.month == last_day.month - 1)
@@ -268,13 +268,13 @@ def make_tableau_dataset(
             & (df.index.month == 12)
             & (last_day.month == 1)
         ),
-        True,
-        False,
+        'Last Month',
+        df['month'],
     )
 
     df.reset_index(level=0, inplace=True)
     df = df.melt(
-        id_vars=["Date_Time", "prediction", "current_month", "last_month"],
+        id_vars=["Date_Time", "prediction", "month"],
         var_name="measure",
         value_name="Value",
     )
