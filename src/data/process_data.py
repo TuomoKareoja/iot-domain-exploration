@@ -139,6 +139,11 @@ def fill_missing_with_prophet(
         # dropping the predictions so that they wont' interfere with futher joins
         data.drop(columns=["yhat"], inplace=True)
 
+    # total used power has to be the sum of different submeasures
+    # This works as long as the unit conversion is done before this step
+    data["Global_active_power"] = data[
+        ["Sub_metering_1", "Sub_metering_2", "Sub_metering_3", "unmeasured"]
+    ].sum(axis=1)
     data.to_csv(outpath)
 
 
@@ -244,7 +249,9 @@ def make_tableau_dataset(
         m.fit(data_prophet)
         future = m.make_future_dataframe(periods=hours_to_predict, freq="H")
         forecast = m.predict(future)
-        predictions_df[column] = forecast.loc[forecast.index[-hours_to_predict:], "yhat"].to_numpy()
+        predictions_df[column] = forecast.loc[
+            forecast.index[-hours_to_predict:], "yhat"
+        ].to_numpy()
 
     df["prediction"] = False
     predictions_df["prediction"] = True
