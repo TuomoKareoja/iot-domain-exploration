@@ -232,7 +232,7 @@ def make_tableau_dataset(
     index = pd.date_range(
         last_day + timedelta(hours=1), periods=hours_to_predict, freq="H"
     )
-    predictions_df = pd.DataFrame(index=index, columns=columns)
+    predictions_df = pd.DataFrame(index=index)
     predictions_df.index.name = "Date_Time"
 
     for column in columns:
@@ -244,7 +244,9 @@ def make_tableau_dataset(
         m.fit(data_prophet)
         future = m.make_future_dataframe(periods=hours_to_predict, freq="H")
         forecast = m.predict(future)
-        predictions_df[column] = forecast["yhat"][-hours_to_predict:]
+        predictions_df[column] = forecast.loc[forecast.index[-hours_to_predict:], "yhat"].to_numpy()
+        print(forecast.loc[forecast.index[-hours_to_predict:], "yhat"].to_numpy())
+        print(predictions_df)
 
     df["prediction"] = False
     predictions_df["prediction"] = True
@@ -254,8 +256,8 @@ def make_tableau_dataset(
     # Add boolean column for current month and last month
     df["month"] = np.where(
         (df.index.year == last_day.year) & (df.index.month == last_day.month),
-        'Current Month',
-        '',
+        "Current Month",
+        "",
     )
     df["month"] = np.where(
         (
@@ -268,8 +270,8 @@ def make_tableau_dataset(
             & (df.index.month == 12)
             & (last_day.month == 1)
         ),
-        'Last Month',
-        df['month'],
+        "Last Month",
+        df["month"],
     )
 
     df.reset_index(level=0, inplace=True)
