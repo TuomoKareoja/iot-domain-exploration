@@ -116,7 +116,9 @@ data_missing.set_index(data_missing.period, inplace=True)
 data_missing.drop(columns=['period'],inplace=True)
 
 # plot missing periods
-data_missing.plot.bar(figsize=(12,9))
+data_missing.sort_values(by='length_min', ascending=False)[:10].plot.bar(figsize=(6,8.5))
+plt.tight_layout()
+plt.savefig(os.path.join('reports', 'figures', 'missing_periods.png'), facecolor='w')
 
 # There are two three periods that last for over 10 hours.
 # This is a problem for interpolating missing values because

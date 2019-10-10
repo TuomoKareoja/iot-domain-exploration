@@ -206,6 +206,10 @@ This mean we can\ldots
 \begin{frame}
 \frametitle{Missing Data and Other Problems}
 
+\begin{columns}[c] % The "c" option specifies centered vertical alignment while the "t" option is used for top vertical alignment
+
+\column{.5\textwidth} % Left column and width
+
 \begin{itemize}
     \item Grouping of submeters is based on room and not function
     \begin{itemize}
@@ -213,8 +217,23 @@ This mean we can\ldots
         \item Water heater and air-conditioner not separated
     \end{itemize}
     \item 1.25 \% of values missing. Sometimes in stretches over a day
-    \item Electricity use not covered by submeters makes up a over half of the energy consumption
+    \begin{itemize}
+        \item Fixed with a predictive model
+    \end{itemize}
+    \item Electricity use not covered by submeters makes up over half of the energy consumption
 \end{itemize}
+
+\column{.5\textwidth} % Right column and width
+
+\bigskip
+{
+    \centering
+    \includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{missing_periods.png}
+    \par
+}
+\bigskip
+
+\end{columns}
 
 % TODO add picture of data problem
 
