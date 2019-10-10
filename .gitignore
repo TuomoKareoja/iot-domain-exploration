@@ -106,3 +106,7 @@ target/
 *.log
 *.fls
 *.fdb_latexmk
+*.toc
+*.snm
+*.nav
+*.out
