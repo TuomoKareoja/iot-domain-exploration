@@ -245,8 +245,6 @@ def make_tableau_dataset(
         future = m.make_future_dataframe(periods=hours_to_predict, freq="H")
         forecast = m.predict(future)
         predictions_df[column] = forecast.loc[forecast.index[-hours_to_predict:], "yhat"].to_numpy()
-        print(forecast.loc[forecast.index[-hours_to_predict:], "yhat"].to_numpy())
-        print(predictions_df)
 
     df["prediction"] = False
     predictions_df["prediction"] = True
