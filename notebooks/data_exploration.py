@@ -244,6 +244,7 @@ draw_distribution(
 # Drawing publishable version of the previous four picture
 
 measures = ["unmeasured", "Sub_metering_3", "Sub_metering_2", "Sub_metering_1"]
+legends = ["Unmeasured", "Submeter 3", "Submeter 2", "Submeter 1"]
 levels = ["year", "month", "weekday", "hour"]
 weekday_order = [
     "Monday",
@@ -254,6 +255,8 @@ weekday_order = [
     "Saturday",
     "Sunday",
 ]
+
+weekday_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 month_order = [
     "January",
@@ -270,26 +273,50 @@ month_order = [
     "December",
 ]
 
-fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(12, 11))
+month_labels = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+]
+
+colors = ["darkgrey", "red", "orange", "lightblue"]
+
+sns.set(style="ticks", color_codes=True)
+
+fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(12, 8))
 ax_1 = ax1.twinx()
 ax_2 = ax2.twinx()
 ax_3 = ax3.twinx()
 ax_4 = ax4.twinx()
+
 for level, ax, ax_ in zip(levels, [ax1, ax2, ax3, ax4], [ax_1, ax_2, ax_3, ax_4]):
     if level == "month":
         order = month_order
+        labels = month_labels
     elif level == "weekday":
         order = weekday_order
+        labels = weekday_labels
     else:
         order = None
-    for measure in measures:
+        labels = None
+    for measure, color in zip(measures, colors):
         sns.barplot(
             x=level,
             y="Global_active_power",
             data=data,
+            label=measure,
             ci=None,
             order=order,
-            color="pink",
+            color="teal",
             ax=ax,
         )
 
@@ -300,14 +327,24 @@ for level, ax, ax_ in zip(levels, [ax1, ax2, ax3, ax4], [ax_1, ax_2, ax_3, ax_4]
             .multiply(100),
             ci=None,
             order=order,
+            color=color,
             ax=ax_,
         )
-        # ax.set(ylabel="Total Energy Use")
+
+        if labels:
+            ax.set_xticklabels(labels)
+
+        ax.set(ylabel="")
+        ax.tick_params(axis="y", colors="teal")
         ax.set_ylim(bottom=0)
         ax_.set_ylim(bottom=0)
-        # ax_2.set(ylabel="% of Total Energy Use")
+        ax_.set(ylabel="")
+ax3.set(ylabel="Average Energy Use per Hour (kWh)")
+ax_4.set(ylabel="% of Energy Use")
+ax_1.legend(fancybox=True, framealpha=0.9, labels=legends, prop={"size": 14})
 plt.xticks(rotation=90)
-plt.show()
+plt.tight_layout()
+plt.savefig(os.path.join("reports", "figures", "periodicity.png"), facecolor="w")
 
 
 #%%
