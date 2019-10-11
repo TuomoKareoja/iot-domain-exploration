@@ -83,6 +83,9 @@ def compare_models(data, variable, test_size):
     forecast_simple["yhat_upper"] = np.where(
         forecast_simple["yhat_upper"] < 0, 0, forecast_simple["yhat_upper"]
     )
+    global forecast_plot_simple
+    global component_plot_simple
+
     forecast_plot_simple = m_simple.plot(forecast_simple)
     component_plot_simple = m_simple.plot_components(forecast_simple)
 
@@ -102,6 +105,9 @@ def compare_models(data, variable, test_size):
     forecast_holiday["yhat_upper"] = np.where(
         forecast_holiday["yhat_upper"] < 0, 0, forecast_holiday["yhat_upper"]
     )
+    global forecast_plot_holiday
+    global component_plot_holiday
+
     forecast_plot_holiday = m_holiday.plot(forecast_holiday)
     component_plot_holiday = m_holiday.plot_components(forecast_holiday)
 
@@ -139,6 +145,10 @@ def compare_models(data, variable, test_size):
     forecast_temp["yhat_upper"] = np.where(
         forecast_temp["yhat_upper"] < 0, 0, forecast_temp["yhat_upper"]
     )
+
+    global forecast_plot_temp
+    global component_plot_temp
+
     forecast_plot_temp = m_temp.plot(forecast_temp)
     component_plot_temp = m_temp.plot_components(forecast_temp)
 
@@ -185,6 +195,18 @@ compare_models(data=data, variable="Global_active_power", test_size=31 * 24)
 
 compare_models(data=data, variable="Sub_metering_1", test_size=31 * 24)
 
+#%%
+
+# Saving the plots for the presentation
+
+forecast_plot_simple.savefig(
+    os.path.join("reports", "figures", "prophet_forecast.png"), facecolor="w"
+)
+component_plot_simple.savefig(
+    os.path.join("reports", "figures", "prophet_components.png"), facecolor="w"
+)
+
+
 #%% [markdown]
 
 # ## Sub Meter 2
@@ -195,8 +217,8 @@ compare_models(data=data, variable="Sub_metering_1", test_size=31 * 24)
 
 #%%
 
-compare_models(data=data, variable="Sub_metering_2", test_size=31 * 24)
-#%% [markdown]
+# compare_models(data=data, variable="Sub_metering_2", test_size=31 * 24)
+# %% [markdown]
 
 # ## Sub Meter 3
 
@@ -205,7 +227,7 @@ compare_models(data=data, variable="Sub_metering_2", test_size=31 * 24)
 
 #%%
 
-compare_models(data=data, variable="Sub_metering_3", test_size=31 * 24)
+# compare_models(data=data, variable="Sub_metering_3", test_size=31 * 24)
 
 #%% [markdown]
 
@@ -215,4 +237,7 @@ compare_models(data=data, variable="Sub_metering_3", test_size=31 * 24)
 
 #%%
 
-compare_models(data=data, variable="unmeasured", test_size=31 * 24)
+# compare_models(data=data, variable="unmeasured", test_size=31 * 24)
+
+#%%
+

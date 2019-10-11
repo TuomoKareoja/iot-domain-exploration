@@ -29,6 +29,7 @@
 \usepackage{graphicx} % Allows including images
 \usepackage{booktabs} % Allows the use of \toprule, \midrule and \bottomrule in tables
 \usepackage{tikz} % Allows the use of \toprule, \midrule and \bottomrule in tables
+\usepackage{hyperref}
 
 \usetheme{default}
 % \usetheme{AnnArbor}
@@ -201,6 +202,21 @@ This mean we can\ldots
 \end{frame}
 
 %------------------------------------------------
+\subsection{Basic Stats}
+%------------------------------------------------
+
+\begin{frame}
+\frametitle{Basic Stats}
+
+{
+    \centering
+    \includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{periodicity.png}
+    \par
+}
+
+\end{frame}
+
+%------------------------------------------------
 \subsection{Missing Data and Other Problems}
 %------------------------------------------------
 \begin{frame}
@@ -239,21 +255,6 @@ This mean we can\ldots
 
 \end{frame}
 
-%------------------------------------------------
-\subsection{Basic Stats}
-%------------------------------------------------
-
-\begin{frame}
-\frametitle{Basic Stats}
-
-{
-    \centering
-    \includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{periodicity.png}
-    \par
-}
-
-\end{frame}
-
 
 %------------------------------------------------
 \section{Possible Applications}
@@ -266,8 +267,31 @@ This mean we can\ldots
 \begin{frame}
 \frametitle{Predictive Analytics}
 
-Problematic when taking too detailed view
-Work well on a larger scale
+\begin{columns}[c] % The "c" option specifies centered vertical alignment while the "t" option is used for top vertical alignment
+
+\column{.5\textwidth} % Left column and width
+
+\begin{itemize}
+    \item Multiple seasonal patterns easily modeled
+    \item Minute level data impossible to model \(\Rightarrow \) have to aggregate
+    \item Hourly level realistic in overall use and daily level in submeters
+\end{itemize}
+
+\medskip
+{
+    \centering
+    \includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{prophet_forecast.png}
+    \par
+}
+
+\column{.5\textwidth} % Right column and width
+{
+    \centering
+    \includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{prophet_components.png}
+    \par
+}
+
+\end{columns}
 
 \end{frame}
 
@@ -278,22 +302,32 @@ Work well on a larger scale
 \begin{frame}
 \frametitle{Dashboards}
 
-Customer facing application for monitoring electricity use
-can be combined with predictive analytics
+\begin{itemize}
+    \item
+        \href{https://eu-west-1a.online.tableau.com/\#/site/tuomokareoja/views/EnergyUseandCosts/EnergyUseandCosts/}{Dashboard for the breakdown of electricity use by period combined with predictions}
+\end{itemize}
+
+{
+    \centering
+        \includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{tableau_demo.png}
+    \par
+}
 
 \end{frame}
 
 
 %------------------------------------------------
-\section{Recommendations for Next Steps}
+\section{Recommendations}
 %------------------------------------------------
 
 
 \begin{frame}
-\frametitle{Recommendations for Next Steps}
+\frametitle{Recommendations}
 
-Make sure that the submeter groupings are decided with the customer
-Build customer facing dashboard with some predictive analytics features
+\begin{enumerate}
+    \item Make sure that the submeter groupings make sense to the customer
+    \item Build customer facing dashboard with some predictive analytics features
+\end{enumerate}
 
 \end{frame}
 
