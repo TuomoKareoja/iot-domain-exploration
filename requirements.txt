@@ -21,3 +21,4 @@ pmdarima
 joblib
 holidays
 tqdm
+plotly
