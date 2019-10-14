@@ -175,4 +175,3 @@ optimized_res = optimized_model.fit()
 #%%
 
 print(optimized_res.summary())
-optimized_res.save(os.path.join("models", "sarimax_simple.p"))
