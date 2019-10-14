@@ -126,7 +126,7 @@ IOT Analytics \\ % Your institution for the title page
 %------------------------------------------------
 
 %------------------------------------------------
-\subsection{What is Submetering}
+\subsection{What is Submetering?}
 %------------------------------------------------
 
 \begin{frame}
@@ -154,13 +154,15 @@ IOT Analytics \\ % Your institution for the title page
 Connected Submeters give a real time reading of the energy use in different parts of buildings
 or even different device groups
 
+\pause
 \bigskip
-
-This mean we can\ldots
+This means that we can\ldots
 \begin{enumerate}
-    \item See what is actually spending that electricity
+    \item Make it easier to save energy by finding out what is actually using it
+    \pause
     \item Pinpoint possible failure points fast and precisely
-    \item Gather time series data about the electricity use with a chosen granularity for further analysis
+    \pause
+    \item Easily gather data for future analysis
 \end{enumerate}
 
 \end{frame}
@@ -182,9 +184,13 @@ This mean we can\ldots
 \column{.5\textwidth} % Left column and width
 
 \begin{itemize}
-    \item Minute level readings from 3 submeters and overall energy usage between December 2006 and November 2010 in House in Sceaux
+    \item Minute level readings from 3 submeters and overall energy usage between December 2006 and November 2010 in a house in Sceaux
+    \uncover<2->{
     \item The three submeters cover the kitchen, the laundry room and the combination of the water-heater and air-conditioning
+    }
+    \uncover<3->{
     \item Electricity use not covered by submeters can be calculated by deducting the submeter readings from overall electricity use
+    }
 \end{itemize}
 
 \column{.5\textwidth} % Right column and width
@@ -193,6 +199,7 @@ This mean we can\ldots
 {
     \centering
     \includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{sceaux.jpg}
+    Sceaux
     \par
 }
 \bigskip
@@ -227,16 +234,20 @@ This mean we can\ldots
 \column{.5\textwidth} % Left column and width
 
 \begin{itemize}
+    \item 1.25 \% of values missing. Sometimes in stretches over a day
+    \begin{itemize}
+        \item Fixed with a predictive model
+    \end{itemize}
+    \uncover<2->{
     \item Grouping of submeters is based on room and not function
     \begin{itemize}
         \item Refrigerator is in the laundry room
         \item Water heater and air-conditioner not separated
     \end{itemize}
-    \item 1.25 \% of values missing. Sometimes in stretches over a day
-    \begin{itemize}
-        \item Fixed with a predictive model
-    \end{itemize}
+    }
+    \uncover<3->{
     \item Electricity use not covered by submeters makes up over half of the energy consumption
+    }
 \end{itemize}
 
 \column{.5\textwidth} % Right column and width
@@ -273,15 +284,20 @@ This mean we can\ldots
 
 \begin{itemize}
     \item Multiple seasonal patterns easily modeled
+    \uncover<2->{
     \item Minute level data impossible to model \(\Rightarrow \) have to aggregate
     \item Hourly level realistic in overall use and daily level in submeters
+    }
 \end{itemize}
 
-\medskip
-{
-    \centering
-    \includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{prophet_forecast.png}
-    \par
+\uncover<2->{
+    \medskip
+    {
+        \centering
+        \includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{prophet_forecast.png}
+        \footnotesize Submeter-level energy use has distinctive on/off states that are impossible to predict
+        \par
+    }
 }
 
 \column{.5\textwidth} % Right column and width
@@ -325,8 +341,21 @@ This mean we can\ldots
 \frametitle{Recommendations}
 
 \begin{enumerate}
-    \item Make sure that the submeter groupings make sense to the customer
-    \item Build customer facing dashboard with some predictive analytics features
+    \item Predictive models of energy use possible with caveats
+    \begin{itemize}
+        \pause
+        \item Minute level impossible to predict
+        \pause
+        \item Hourly level possible to predict with overall energy use, but not with submeters
+    \end{itemize}
+        \pause
+    \item The data lends itself nicely to customer facing dashboards, but\ldots
+    \begin{itemize}
+        \pause
+        \item Submeter groupings should be more intuitive and grouped by use rather that location
+        \pause
+        \item What is the right number of submeters?
+    \end{itemize}
 \end{enumerate}
 
 \end{frame}
