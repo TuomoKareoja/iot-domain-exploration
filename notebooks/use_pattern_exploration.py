@@ -19,15 +19,21 @@ from src.data.load_data import load_processed_data
 col_red = "#D16BA5"
 col_blue = "#86A8E7"
 col_magenta = "#3ACAC0"
+template = "plotly_white"
+
+img_width = 700
+img_height = 500
+img_scale = 2
+
+margin_l = 50
+margin_r = 0
+margin_b = 50
+margin_t = 50
+margin_pad = 0
 
 #%% Setting save path
 
 fig_path = os.path.join("reports", "figures")
-
-#%% Setting image size
-
-img_width = 1024
-img_height = 600
 
 #%% Loading in the data
 
@@ -115,10 +121,12 @@ fig.add_trace(
     )
 )
 fig.update_layout(
-    title="Overall Trends is Power Usage",
     yaxis=dict(zeroline=True),
     xaxis_title="Date",
     yaxis_title="Watt Hours",
+    margin=go.layout.Margin(
+        l=margin_l, r=margin_r, b=margin_b, t=margin_t, pad=margin_pad
+    ),
     annotations=[
         go.layout.Annotation(
             x="2007-01-10",
@@ -146,8 +154,13 @@ fig.update_layout(
         ),
     ],
 )
-fig.layout.template = "plotly_white"
-fig.write_image(os.path.join(fig_path, img_name), width=img_width, height=img_height)
+fig.layout.template = template
+fig.write_image(
+    os.path.join(fig_path, img_name),
+    width=img_width,
+    height=img_height,
+    scale=img_scale,
+)
 fig.show()
 
 #%% hourly, weekly and monthly trends
@@ -195,11 +208,10 @@ img_names = [
     "weekly_seasonality.png",
     "monthly_seasonality.png",
 ]
-titles = ["Daily Patterns", "Weekly Patterns", "Monthly Patterns"]
 datasets = [data_time, data_weekday, data_month]
 xaxis_list = ["Time", "Weekday", "Month"]
 
-for dataset, xaxis, title, img_name in zip(datasets, xaxis_list, titles, img_names):
+for dataset, xaxis, img_name in zip(datasets, xaxis_list, img_names):
 
     fig = go.Figure()
     fig.add_trace(
@@ -242,11 +254,13 @@ for dataset, xaxis, title, img_name in zip(datasets, xaxis_list, titles, img_nam
         yaxis=dict(zeroline=True),
         xaxis_title=xaxis,
         yaxis_title="Watt Hours",
-        title=title,
+        margin=go.layout.Margin(
+            l=margin_l, r=margin_r, b=margin_b, t=margin_t, pad=margin_pad
+        ),
     )
     if xaxis == "Time":
         fig.update_layout(xaxis=dict(tickmode="linear", tick0=0, dtick=24))
-    fig.layout.template = "plotly_white"
+    fig.layout.template = template
     if xaxis == "Time":
         fig.update_layout(
             annotations=[
@@ -335,7 +349,10 @@ for dataset, xaxis, title, img_name in zip(datasets, xaxis_list, titles, img_nam
             ]
         )
     fig.write_image(
-        os.path.join(fig_path, img_name), width=img_width, height=img_height
+        os.path.join(fig_path, img_name),
+        width=img_width,
+        height=img_height,
+        scale=img_scale,
     )
     fig.show()
 
@@ -352,9 +369,8 @@ data_20091224["Time"] = data_20091224.index.time
 
 img_names = ["20080607.png", "20091224.png"]
 datasets = [data_20080708, data_20091224]
-titles = ["8 July 2008, Tuesday", "Christmas Eve 2009"]
 
-for dataset, title, img_name in zip(datasets, titles, img_names):
+for dataset, img_name in zip(datasets, img_names):
 
     fig = go.Figure()
     fig.add_trace(
@@ -394,14 +410,16 @@ for dataset, title, img_name in zip(datasets, titles, img_names):
         )
     )
     fig.update_layout(
-        title=title,
         xaxis_title="Time",
         yaxis_title="Watt Hours",
         xaxis=dict(tickmode="linear", tick0=0, dtick=24),
         yaxis=dict(range=(0, 60)),
+        margin=go.layout.Margin(
+            l=margin_l, r=margin_r, b=margin_b, t=margin_t, pad=margin_pad
+        ),
     )
-    fig.layout.template = "plotly_white"
-    if title == "8 July 2008, Tuesday":
+    fig.layout.template = template
+    if img_name == "20080607.png":
         fig.update_layout(
             annotations=[
                 go.layout.Annotation(
@@ -455,7 +473,7 @@ for dataset, title, img_name in zip(datasets, titles, img_names):
                     arrowhead=1,
                     arrowsize=2,
                     ax=50,
-                    ay=-80,
+                    ay=-50,
                 ),
                 go.layout.Annotation(
                     x="15:00:00",
@@ -496,6 +514,9 @@ for dataset, title, img_name in zip(datasets, titles, img_names):
             ]
         )
     fig.write_image(
-        os.path.join(fig_path, img_name), width=img_width, height=img_height
+        os.path.join(fig_path, img_name),
+        width=img_width,
+        height=img_height,
+        scale=img_scale,
     )
     fig.show()
