@@ -7,40 +7,54 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import plotly.express as px
 import sklearn
 from dotenv import find_dotenv, load_dotenv
 from IPython.core.interactiveshell import InteractiveShell
+import plotly.graph_objects as go
 
 from src.data.load_data import load_processed_data
 
-# Setting styles
-InteractiveShell.ast_node_interactivity = "all"
-sns.set(style="whitegrid", color_codes=True)
+#%% Setting styles
+
+col_red = "#D16BA5"
+col_blue = "#86A8E7"
+col_magenta = "#3ACAC0"
+
+#%% Setting save path
+
+fig_path = os.path.join("reports", "figures")
+
+#%% Setting image size
+
+img_width = 1024
+img_height = 600
 
 #%% Loading in the data
-data_raw_path = os.path.join("data", "raw", "submeters.csv")
-data_raw = pd.read_csv(data_raw_path, parse_dates=[["Date", "Time"]])
-data_raw.set_index("Date_Time", inplace=True)
+
+data_path = os.path.join("data", "raw", "submeters.csv")
+data = pd.read_csv(data_path, parse_dates=[["Date", "Time"]])
+data.set_index("Date_Time", inplace=True)
 
 # There are no missing values but it just because the index is not fully continuous.
 # This is does not matter in the analyses that we will be doing here
-data_raw.dtypes
-data_raw.isnull().sum()
-data_raw.describe()
-data_raw.head()
-data_raw.shape
+data.dtypes
+data.isnull().sum()
+data.describe()
+data.head()
+data.shape
 
-data_raw["Unmeasured"] = (
-    data_raw["Global_active_power"]
+# calculating unmeasured power use from total power use and coverting it to watt hours.
+# (See dataset_info.txt for conversions details).
+data["Unmeasured"] = (
+    data["Global_active_power"]
     .multiply(1000)
     .divide(60)
-    .subtract(data_raw["Sub_metering_1"])
-    .subtract(data_raw["Sub_metering_2"])
-    .subtract(data_raw["Sub_metering_3"])
+    .subtract(data["Sub_metering_1"])
+    .subtract(data["Sub_metering_2"])
+    .subtract(data["Sub_metering_3"])
 )
 
-data_raw.drop(
+data.drop(
     columns=[
         "id",
         "Global_active_power",
@@ -52,111 +66,436 @@ data_raw.drop(
     inplace=True,
 )
 
-data_raw.columns = ["Submeter 1", "Submeter 2", "Submeter 3", "Unmeasured"]
+data.columns = ["Kitchen", "Laundry Room", "Heating", "Unmeasured"]
+# 1 min timeframe is too tight for even one day visualizations
+data = data.resample("5Min").mean()
+
+#%% Overall trends
+
+img_name = "energy_use_overall_trends.png"
+data_trend = data.resample("1M").mean()
+
+#%%
+
+fig = go.Figure()
+fig.add_trace(
+    go.Scatter(
+        x=data_trend.index.date,
+        y=data_trend["Kitchen"],
+        mode="lines",
+        name="Kitchen",
+        line=dict(color=col_red),
+    )
+)
+fig.add_trace(
+    go.Scatter(
+        x=data_trend.index.date,
+        y=data_trend["Laundry Room"],
+        mode="lines",
+        name="Laundry Room",
+        line=dict(color=col_blue),
+    )
+)
+fig.add_trace(
+    go.Scatter(
+        x=data_trend.index.date,
+        y=data_trend["Heating"],
+        mode="lines",
+        name="Heating",
+        line=dict(color=col_magenta),
+    )
+)
+fig.add_trace(
+    go.Scatter(
+        x=data_trend.index.date,
+        y=data_trend["Unmeasured"],
+        mode="lines",
+        name="Unmeasured",
+        line=dict(color="grey"),
+    )
+)
+fig.update_layout(
+    title="Overall Trends is Power Usage",
+    yaxis=dict(zeroline=True),
+    xaxis_title="Date",
+    yaxis_title="Watt Hours",
+    annotations=[
+        go.layout.Annotation(
+            x="2007-01-10",
+            y=21,
+            xref="x",
+            yref="y",
+            text="Very high unmeasured use",
+            showarrow=True,
+            arrowhead=1,
+            arrowsize=2,
+            ax=120,
+            ay=10,
+        ),
+        go.layout.Annotation(
+            x="2008-08-30",
+            y=3.5,
+            xref="x",
+            yref="y",
+            text="Travelling?",
+            showarrow=True,
+            arrowhead=1,
+            arrowsize=2,
+            ax=-10,
+            ay=-180,
+        ),
+    ],
+)
+fig.layout.template = "plotly_white"
+fig.write_image(os.path.join(fig_path, img_name), width=img_width, height=img_height)
+fig.show()
+
+#%% hourly, weekly and monthly trends
+
+data_time = data.groupby(data.index.time).mean().reset_index()
+data_time.rename(columns={"index": "Time"}, inplace=True)
+
+data_weekday = data.groupby(data.index.weekday_name).mean().reset_index()
+data_weekday.rename(columns={"Date_Time": "Weekday"}, inplace=True)
+weekday_order = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+]
+data_weekday["Weekday"] = pd.Categorical(data_weekday.Weekday, weekday_order)
+data_weekday.sort_values(by=["Weekday"], inplace=True)
+
+data_month = data.groupby(data.index.month_name(locale=None)).mean().reset_index()
+data_month.rename(columns={"Date_Time": "Month"}, inplace=True)
+month_order = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+]
+data_month["Month"] = pd.Categorical(data_month.Month, month_order)
+data_month.sort_values(by=["Month"], inplace=True)
+
+#%%
+
+img_names = [
+    "daily_seasonality.png",
+    "weekly_seasonality.png",
+    "monthly_seasonality.png",
+]
+titles = ["Daily Patterns", "Weekly Patterns", "Monthly Patterns"]
+datasets = [data_time, data_weekday, data_month]
+xaxis_list = ["Time", "Weekday", "Month"]
+
+for dataset, xaxis, title, img_name in zip(datasets, xaxis_list, titles, img_names):
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=dataset[xaxis],
+            y=dataset["Kitchen"],
+            mode="lines",
+            name="Kitchen",
+            line=dict(color=col_red),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=dataset[xaxis],
+            y=dataset["Laundry Room"],
+            mode="lines",
+            name="Laundry Room",
+            line=dict(color=col_blue),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=dataset[xaxis],
+            y=dataset["Heating"],
+            mode="lines",
+            name="Heating",
+            line=dict(color=col_magenta),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=dataset[xaxis],
+            y=dataset["Unmeasured"],
+            mode="lines",
+            name="Unmeasured",
+            line=dict(color="grey"),
+        )
+    )
+    fig.update_layout(
+        yaxis=dict(zeroline=True),
+        xaxis_title=xaxis,
+        yaxis_title="Watt Hours",
+        title=title,
+    )
+    if xaxis == "Time":
+        fig.update_layout(xaxis=dict(tickmode="linear", tick0=0, dtick=24))
+    fig.layout.template = "plotly_white"
+    if xaxis == "Time":
+        fig.update_layout(
+            annotations=[
+                go.layout.Annotation(
+                    x="03:00:00",
+                    y=2.4,
+                    xref="x",
+                    yref="y",
+                    text="Not much heating or air conditioning during the night",
+                    showarrow=True,
+                    arrowhead=1,
+                    arrowsize=2,
+                    ax=80,
+                    ay=-130,
+                ),
+                go.layout.Annotation(
+                    x="06:45:00",
+                    y=15,
+                    xref="x",
+                    yref="y",
+                    text="Unknown peak",
+                    showarrow=True,
+                    arrowhead=1,
+                    arrowsize=2,
+                    ax=-120,
+                    ay=-20,
+                ),
+                go.layout.Annotation(
+                    x="19:00:00",
+                    y=18,
+                    xref="x",
+                    yref="y",
+                    text="Evening entertainment electronics",
+                    showarrow=True,
+                    arrowhead=1,
+                    arrowsize=2,
+                    ax=-180,
+                    ay=-10,
+                ),
+                go.layout.Annotation(
+                    x="08:10:00",
+                    y=2.2,
+                    xref="x",
+                    yref="y",
+                    text="Breakfast",
+                    showarrow=True,
+                    arrowhead=1,
+                    arrowsize=2,
+                    ax=-10,
+                    ay=-50,
+                ),
+            ]
+        )
+    elif xaxis == "Weekday":
+        fig.update_layout(
+            annotations=[
+                go.layout.Annotation(
+                    x="Saturday",
+                    y=10.1,
+                    xref="x",
+                    yref="y",
+                    text="Increased entertainment electronics use during weekend?",
+                    showarrow=True,
+                    arrowhead=7,
+                    arrowsize=2,
+                    ax=-250,
+                    ay=-10,
+                )
+            ]
+        )
+    else:
+        fig.update_layout(
+            annotations=[
+                go.layout.Annotation(
+                    x="August",
+                    y=5.3,
+                    xref="x",
+                    yref="y",
+                    text="Heating only dips in July and August",
+                    showarrow=True,
+                    arrowhead=1,
+                    arrowsize=2,
+                    ax=-50,
+                    ay=-100,
+                )
+            ]
+        )
+    fig.write_image(
+        os.path.join(fig_path, img_name), width=img_width, height=img_height
+    )
+    fig.show()
 
 
 #%% Typical Day
 
-# Use minute granularity
+data_20080708 = data["2008-07-08"].copy()
+data_20091224 = data["2009-12-24"].copy()
 
-data_20080407 = data_raw["2008-04-07"].copy()
-data_20080708 = data_raw["2008-07-08"].copy()
-data_20090108 = data_raw["2009-01-08"].copy()
-data_20091224 = data_raw["2009-12-24"].copy()
-
-data_20080407 = data_20080407.resample("5Min").mean()
-data_20080708 = data_20080708.resample("5Min").mean()
-data_20090108 = data_20090108.resample("5Min").mean()
-data_20091224 = data_20091224.resample("5Min").mean()
-
-data_20080407["Time"] = data_20080407.index.time
 data_20080708["Time"] = data_20080708.index.time
-data_20090108["Time"] = data_20090108.index.time
 data_20091224["Time"] = data_20091224.index.time
-
-data_20080407_melt = data_20080407.melt(
-    id_vars=["Time"],
-    value_vars=["Submeter 1", "Submeter 2", "Submeter 3", "Unmeasured"],
-    value_name="Watt Hours",
-    var_name="Submeter",
-)
-data_20080708_melt = data_20080708.melt(
-    id_vars=["Time"],
-    value_vars=["Submeter 1", "Submeter 2", "Submeter 3", "Unmeasured"],
-    value_name="Watt Hours",
-    var_name="Submeter",
-)
-data_20090108_melt = data_20090108.melt(
-    id_vars=["Time"],
-    value_vars=["Submeter 1", "Submeter 2", "Submeter 3", "Unmeasured"],
-    value_name="Watt Hours",
-    var_name="Submeter",
-)
-data_20091224_melt = data_20091224.melt(
-    id_vars=["Time"],
-    value_vars=["Submeter 1", "Submeter 2", "Submeter 3", "Unmeasured"],
-    value_name="Watt Hours",
-    var_name="Submeter",
-)
 
 #%%
 
-dataset_melt_list = [
-    data_20080407_melt,
-    data_20080708_melt,
-    data_20090108_melt,
-    data_20091224_melt,
-]
+img_names = ["20080607.png", "20091224.png"]
+datasets = [data_20080708, data_20091224]
+titles = ["8 July 2008, Tuesday", "Christmas Eve 2009"]
 
-titles = [
-    "2008 April Monday",
-    "2008 July Tuesday",
-    "2009 January Thursday",
-    "2009 Christmas Eve",
-]
+for dataset, title, img_name in zip(datasets, titles, img_names):
 
-for dataset, title in zip(dataset_melt_list, titles):
-    fig = px.line(
-        dataset,
-        x="Time",
-        y="Watt Hours",
-        color="Submeter",
-        color_discrete_sequence=["green", "blue", "red", "grey"],
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=dataset.Time,
+            y=dataset["Kitchen"],
+            mode="lines",
+            name="Kitchen",
+            line=dict(color=col_red),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=dataset.Time,
+            y=dataset["Laundry Room"],
+            mode="lines",
+            name="Laundry Room",
+            line=dict(color=col_blue),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=dataset.Time,
+            y=dataset["Heating"],
+            mode="lines",
+            name="Heating",
+            line=dict(color=col_magenta),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=dataset.Time,
+            y=dataset["Unmeasured"],
+            mode="lines",
+            name="Unmeasured",
+            line=dict(color="grey"),
+        )
+    )
+    fig.update_layout(
         title=title,
+        xaxis_title="Time",
+        yaxis_title="Watt Hours",
+        xaxis=dict(tickmode="linear", tick0=0, dtick=24),
+        yaxis=dict(range=(0, 60)),
+    )
+    fig.layout.template = "plotly_white"
+    if title == "8 July 2008, Tuesday":
+        fig.update_layout(
+            annotations=[
+                go.layout.Annotation(
+                    x="02:00:00",
+                    y=12,
+                    xref="x",
+                    yref="y",
+                    text="Air conditioning spikes",
+                    showarrow=True,
+                    arrowhead=1,
+                    arrowsize=2,
+                    ax=10,
+                    ay=-80,
+                ),
+                go.layout.Annotation(
+                    x="07:55:00",
+                    y=2,
+                    xref="x",
+                    yref="y",
+                    text="Fridge in the laundry room",
+                    showarrow=True,
+                    arrowhead=1,
+                    arrowsize=2,
+                    ax=120,
+                    ay=-250,
+                ),
+                go.layout.Annotation(
+                    x="07:20:00",
+                    y=19,
+                    xref="x",
+                    yref="y",
+                    text="Morning shower",
+                    showarrow=True,
+                    arrowhead=1,
+                    arrowsize=2,
+                    ax=-120,
+                    ay=-120,
+                ),
+            ]
+        )
+    else:
+        fig.update_layout(
+            annotations=[
+                go.layout.Annotation(
+                    x="02:45:00",
+                    y=2.1,
+                    xref="x",
+                    yref="y",
+                    text="Fridge is on much less during the winter",
+                    showarrow=True,
+                    arrowhead=1,
+                    arrowsize=2,
+                    ax=50,
+                    ay=-80,
+                ),
+                go.layout.Annotation(
+                    x="15:00:00",
+                    y=43,
+                    xref="x",
+                    yref="y",
+                    text="Christmas cleaning",
+                    showarrow=True,
+                    arrowhead=1,
+                    arrowsize=2,
+                    ax=-150,
+                    ay=-50,
+                ),
+                go.layout.Annotation(
+                    x="19:00:00",
+                    y=43,
+                    xref="x",
+                    yref="y",
+                    text="Cooking the Christman Dinner",
+                    showarrow=True,
+                    arrowhead=1,
+                    arrowsize=2,
+                    ax=-140,
+                    ay=-110,
+                ),
+                go.layout.Annotation(
+                    x="08:00:00",
+                    y=20,
+                    xref="x",
+                    yref="y",
+                    text="Morning cartoons?",
+                    showarrow=True,
+                    arrowhead=1,
+                    arrowsize=2,
+                    ax=-30,
+                    ay=-90,
+                ),
+            ]
+        )
+    fig.write_image(
+        os.path.join(fig_path, img_name), width=img_width, height=img_height
     )
     fig.show()
-
-#%% hourly, weekly and monthly trends
-
-# TODO show distributions and lines if legible
-data = data_raw.groupby(data_raw.index.weekday_name).mean().reset_index()
-data.rename(columns={"Date_Time": "Weekday"}, inplace=True)
-
-data_melt = data.melt(
-    id_vars=["Weekday"],
-    value_vars=["Submeter 1", "Submeter 2", "Submeter 3", "Unmeasured"],
-    value_name="Watt Hours",
-    var_name="Submeter",
-)
-
-fig = px.line(
-    data_melt,
-    x="Weekday",
-    y="Watt Hours",
-    color="Submeter",
-    color_discrete_sequence=["green", "blue", "red", "grey"],
-)
-
-fig.show()
-
-
-#%% Extreme values
-
-# TODO
-# Where are the extreme values and that submeter is causing them?
-# When is the energy use very low and could we see when they are on
-# vacation
-
-#%% Unmeasured use patterns
-
-#

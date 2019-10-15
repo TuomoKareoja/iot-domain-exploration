@@ -24,6 +24,7 @@ requirements: test_environment
 	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
 	conda install pystan
 	conda install -c conda-forge fbprophet
+	conda install -c plotly plotly-orca
 
 ## Make Dataset
 data: requirements

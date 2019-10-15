@@ -22,3 +22,5 @@ joblib
 holidays
 tqdm
 plotly
+psutil
+requests
