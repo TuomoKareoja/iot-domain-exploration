@@ -52,29 +52,20 @@ data = data["2007"]
 
 #%%
 
+# GLOBALS
+
 target_variable = "Global_active_power"
 # 24 * 30 = 30 days = 1 month
 test_size = 24 * 30
 tests = 2
-
-#%%
-
-# A dataframe that contains the correct measurements for the target
-# variable for all test periods and one a length of one test_size begore
-# them. That means that this dataframe can be used to check insample predictions
-# and all test predictions
-
-results = data[[target_variable]][-(test_size * (tests + 1)) :]
-results["type"] = ["insample"] * test_size + [
-    "test_{}".format(test_number)
-    for _ in range(test_size)
-    for test_number in range(1, tests + 1)
-]
+fig_path = os.path.join("reports", "figures")
+img_graph_name = "model_comparison_timeseries"
+img_table_name = "model_comparison_table"
 
 #%%
 
 
-def prophet_cv(data, target_variable, test_size, tests, results):
+def prophet_cv(results, freq):
 
     for test_number in range(1, tests + 1):
 
@@ -89,7 +80,7 @@ def prophet_cv(data, target_variable, test_size, tests, results):
         model_prophet = Prophet()
         model_prophet.fit(df_train)
         prophet_future = model_prophet.make_future_dataframe(
-            periods=test_size, freq="H"
+            periods=test_size, freq=freq
         )
         prophet_prediction = model_prophet.predict(prophet_future)
 
@@ -111,10 +102,7 @@ def prophet_cv(data, target_variable, test_size, tests, results):
     return results
 
 
-#%%
-
-
-def sarimax_cv(data, target_variable, test_size, tests, results):
+def sarimax_cv(results, order, seasonal_order):
 
     for test_number in range(1, tests + 1):
 
@@ -124,9 +112,7 @@ def sarimax_cv(data, target_variable, test_size, tests, results):
 
         # see sarimax_optimization.py for finding the hyperparameters
         model_sarimax = SARIMAX(
-            df_train["Global_active_power"],
-            order=(2, 1, 1),
-            seasonal_order=(2, 0, 1, 24),
+            df_train[target_variable], order=order, seasonal_order=seasonal_order
         )
         res = model_sarimax.fit()
 
@@ -155,10 +141,7 @@ def sarimax_cv(data, target_variable, test_size, tests, results):
     return results
 
 
-#%%
-
-
-def holtwinters_cv(data, target_variable, test_size, tests, results):
+def holtwinters_cv(results, seasonal_periods):
 
     for test_number in range(1, tests + 1):
 
@@ -167,7 +150,11 @@ def holtwinters_cv(data, target_variable, test_size, tests, results):
         df_train = data[:test_split][[target_variable]]
 
         res = ExponentialSmoothing(
-            df_train, seasonal_periods=24, trend="add", seasonal="add", damped=True
+            df_train,
+            seasonal_periods=seasonal_periods,
+            trend="add",
+            seasonal="add",
+            damped=True,
         ).fit(use_boxcox=True)
 
         # for the first test take also the insample predictions
@@ -186,150 +173,174 @@ def holtwinters_cv(data, target_variable, test_size, tests, results):
     return results
 
 
-#%%
+def aggregate_df(df, agg):
+    df = df.resample(agg).mean()
+    if agg == "1H":
+        agg_suffix = "hours"
+    else:
+        agg_suffix = "days"
+    return df, agg_suffix
 
-results = prophet_cv(
-    data=data,
-    target_variable=target_variable,
-    test_size=test_size,
-    tests=tests,
-    results=results,
-)
 
-#%%
+def draw_prediction_plot(results, agg_suffix):
 
-results = sarimax_cv(
-    data=data,
-    target_variable=target_variable,
-    test_size=test_size,
-    tests=tests,
-    results=results,
-)
-
-#%%
-
-results = holtwinters_cv(
-    data=data,
-    target_variable=target_variable,
-    test_size=test_size,
-    tests=tests,
-    results=results,
-)
-
-#%%
-
-img_name = "model_comparison_hours.png"
-
-fig = go.Figure()
-fig.add_trace(
-    go.Scatter(
-        x=results.index,
-        y=results[target_variable],
-        mode="lines",
-        name="Actual",
-        line=dict(color="grey"),
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=results.index,
+            y=results[target_variable],
+            mode="lines",
+            name="Actual",
+            line=dict(color="grey"),
+        )
     )
-)
-fig.add_trace(
-    go.Scatter(
-        x=results.index,
-        y=results["prophet"],
-        mode="lines",
-        name="Prophet",
-        line=dict(color=col_red),
+    fig.add_trace(
+        go.Scatter(
+            x=results.index,
+            y=results["prophet"],
+            mode="lines",
+            name="Prophet",
+            line=dict(color=col_red),
+        )
     )
-)
-fig.add_trace(
-    go.Scatter(
-        x=results.index,
-        y=results["sarimax"],
-        mode="lines",
-        name="SARIMAX",
-        line=dict(color=col_blue),
+    fig.add_trace(
+        go.Scatter(
+            x=results.index,
+            y=results["sarimax"],
+            mode="lines",
+            name="SARIMAX",
+            line=dict(color=col_blue),
+        )
     )
-)
-fig.add_trace(
-    go.Scatter(
-        x=results.index,
-        y=results["holtwinters"],
-        mode="lines",
-        name="Holt-Winters",
-        line=dict(color=col_magenta),
+    fig.add_trace(
+        go.Scatter(
+            x=results.index,
+            y=results["holtwinters"],
+            mode="lines",
+            name="Holt-Winters",
+            line=dict(color=col_magenta),
+        )
     )
-)
-fig.update_layout(
-    xaxis_title="Datetime",
-    yaxis_title="Watt Hours",
-    # xaxis=dict(tickmode="linear", tick0=0, dtick=24),
-    # yaxis=dict(range=(0, 60)),
-    margin=go.layout.Margin(
-        l=margin_l, r=margin_r, b=margin_b, t=margin_t, pad=margin_pad
-    ),
-)
-fig.layout.template = template
-fig.write_image(
-    os.path.join(fig_path, img_name),
-    width=img_width,
-    height=img_height,
-    scale=img_scale,
-)
-fig.show()
+    fig.update_layout(
+        xaxis_title="Date",
+        yaxis_title="Watt Hours",
+        margin=go.layout.Margin(
+            l=margin_l, r=margin_r, b=margin_b, t=margin_t, pad=margin_pad
+        ),
+    )
+    fig.layout.template = template
+    fig.write_image(
+        os.path.join(fig_path, img_chart_name + "_" + agg_suffix + ".png"),
+        width=img_width,
+        height=img_height,
+        scale=img_scale,
+    )
+    fig.show()
 
-#%%
 
-index_type = ["Insample"] + [
-    "Test {}".format(test_number) for test_number in range(1, tests + 1)
-]
-index_type = index_type * 3
-index_metric = ["MSE"] * (tests + 1) + ["MAE"] * (tests + 1) + ["R2"] * (tests + 1)
-index = pd.MultiIndex.from_arrays([index_type, index_metric], names=("Type", "Metric"))
-columns = ["Prophet", "SARIMAX", "Holt-Winters"]
-result_metrics = pd.DataFrame(index=index, columns=columns)
+def draw_metrics_table(results, agg_suffix):
+    index_type = ["Insample"] + [
+        "Test {}".format(test_number) for test_number in range(1, tests + 1)
+    ]
+    index_type = index_type * 3
+    index_metric = ["MSE"] * (tests + 1) + ["MAE"] * (tests + 1) + ["R2"] * (tests + 1)
+    index = pd.MultiIndex.from_arrays(
+        [index_type, index_metric], names=("Type", "Metric")
+    )
+    columns = ["Prophet", "SARIMAX", "Holt-Winters"]
+    result_metrics = pd.DataFrame(index=index, columns=columns)
 
-models = ["prophet", "sarimax", "holtwinters"]
-for model, model_column in zip(models, columns):
-    metrics = []
-    for metric in [mean_squared_error, mean_absolute_error, r2_score]:
-        for type in results["type"].unique():
-            metrics.append(
-                round(
-                    metric(
-                        results.loc[results["type"] == type, target_variable],
-                        results.loc[results["type"] == type, model],
+    models = ["prophet", "sarimax", "holtwinters"]
+    for model, model_column in zip(models, columns):
+        metrics = []
+        for metric in [mean_squared_error, mean_absolute_error, r2_score]:
+            for type in results["type"].unique():
+                metrics.append(
+                    round(
+                        metric(
+                            results.loc[results["type"] == type, target_variable],
+                            results.loc[results["type"] == type, model],
+                        )
                     )
                 )
+        result_metrics[model_column] = metrics
+
+    result_metrics.reset_index(inplace=True)
+
+    fig = go.Figure(
+        data=[
+            go.Table(
+                header=dict(values=list(result_metrics.columns), align="left"),
+                cells=dict(
+                    values=[
+                        result_metrics[column].to_list()
+                        for column in result_metrics.columns
+                    ],
+                    align="left",
+                ),
             )
-    result_metrics[model_column] = metrics
+        ]
+    )
+    fig.update_layout(margin=go.layout.Margin(l=0, r=0, b=0, t=0, pad=10))
+    fig.layout.template = template
+    fig.write_image(
+        os.path.join(fig_path, img_table_name + "_" + agg_suffix + ".png"),
+        width=img_width,
+        height=(img_height - 50) / 2,
+        scale=img_scale,
+    )
+    fig.show()
 
-result_metrics.reset_index(inplace=True)
 
-#%%
+def model_and_plot(
+    data,
+    agg_levels,
+    prophet_freq,
+    sarimax_order,
+    sarimax_seasonal_order,
+    holtwinters_seasonal_periods,
+):
 
-img_name = "model_comparison_hours_metrics.png"
+    # getting the right data aggregation
+    data, agg_suffix = aggregate_df(data, agg_levels[0])
 
-fig = go.Figure(
-    data=[
-        go.Table(
-            header=dict(values=list(result_metrics.columns), align="left"),
-            cells=dict(
-                values=[
-                    result_metrics[column].to_list()
-                    for column in result_metrics.columns
-                ],
-                align="left",
-            ),
-        )
+    # A dataframe that contains the correct measurements for the target
+    # variable for all test periods and one a length of one test_size begore
+    # them. That means that this dataframe can be used to check insample predictions
+    # and all test predictions
+    results = data[[target_variable]][-(test_size * (tests + 1)) :]
+    results["type"] = ["insample"] * test_size + [
+        "test_{}".format(test_number)
+        for _ in range(test_size)
+        for test_number in range(1, tests + 1)
     ]
-)
-fig.update_layout(margin=go.layout.Margin(l=0, r=0, b=0, t=0, pad=10))
-fig.layout.template = template
-fig.write_image(
-    os.path.join(fig_path, img_name),
-    width=img_width,
-    height=(img_height - 50) / 2,
-    scale=img_scale,
-)
-fig.show()
+
+    results = prophet_cv(results=results, freq=prophet_freq)
+    results = sarimax_cv(
+        results=results, order=sarimax_order, seasonal_order=sarimax_seasonal_order
+    )
+    results = holtwinters_cv(
+        results=results, seasonal_periods=holtwinters_seasonal_periods
+    )
+
+    for agg in agg_levels:
+
+        results, agg_suffix = aggregate_df(results, agg)
+        draw_prediction_plot(results=results, agg_suffix=agg_suffix)
+        draw_metrics_table(results=results, agg_suffix=agg_suffix)
 
 
 #%%
+
+model_and_plot(
+    data,
+    agg_levels=["1H", "1D"],
+    prophet_freq="H",
+    sarimax_order=(2, 1, 1),
+    sarimax_seasonal_order=(2, 0, 1, 24),
+    holtwinters_seasonal_periods=24,
+)
+
+
+#%%
+
