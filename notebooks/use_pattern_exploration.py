@@ -251,7 +251,7 @@ for dataset, xaxis, img_name in zip(datasets, xaxis_list, img_names):
         )
     )
     fig.update_layout(
-        yaxis=dict(zeroline=True),
+        yaxis=dict(zeroline=True, range=[0, max(dataset["Unmeasured"]) + 1]),
         xaxis_title=xaxis,
         yaxis_title="Watt Hours",
         margin=go.layout.Margin(
