@@ -56,16 +56,40 @@ data = data["2007"]
 
 target_variable = "Global_active_power"
 # 24 * 30 = 30 days = 1 month
-test_size = 24 * 30
-tests = 2
-fig_path = os.path.join("reports", "figures")
-img_graph_name = "model_comparison_timeseries"
-img_table_name = "model_comparison_table"
+hourmodel = dict(
+    data=data,
+    test_size=24 * 30,
+    tests=2,
+    agg_levels=["1H", "1D", "1M"],
+    fig_path=os.path.join("reports", "figures"),
+    img_timeseries_name="model_comparison_timeseries_hourmodel",
+    img_table_name="model_comparison_table_daymodel",
+    prophet_freq="H",
+    sarimax_order=(2, 1, 1),
+    sarimax_seasonal_order=(2, 0, 1, 24),
+    holtwinters_seasonal_periods=24,
+)
+
+# daymodel = dict(
+#     data=data,
+#     test_size=30,
+#     tests=2,
+#     agg_levels=["1D", "1M"],
+#     fig_path=os.path.join("reports", "figures"),
+#     img_timeseries_name="model_comparison_timeseries_daymodel",
+#     img_table_name="model_comparison_table_daymodel",
+#     prophet_freq="H",
+#     sarimax_order=(2, 1, 1),
+#     sarimax_seasonal_order=(2, 0, 1, 365),
+#     holtwinters_seasonal_periods=365,
+# )
+
+models = [hourmodel]
 
 #%%
 
 
-def prophet_cv(results, freq):
+def prophet_cv(data, tests, test_size, results, freq):
 
     for test_number in range(1, tests + 1):
 
@@ -102,7 +126,7 @@ def prophet_cv(results, freq):
     return results
 
 
-def sarimax_cv(results, order, seasonal_order):
+def sarimax_cv(data, tests, test_size, results, order, seasonal_order):
 
     for test_number in range(1, tests + 1):
 
@@ -141,7 +165,7 @@ def sarimax_cv(results, order, seasonal_order):
     return results
 
 
-def holtwinters_cv(results, seasonal_periods):
+def holtwinters_cv(data, tests, test_size, results, seasonal_periods):
 
     for test_number in range(1, tests + 1):
 
@@ -173,16 +197,23 @@ def holtwinters_cv(results, seasonal_periods):
     return results
 
 
-def aggregate_df(df, agg):
-    df = df.resample(agg).mean()
+def aggregate_df(df, agg, cat_column=None):
+    if cat_column:
+        df = df.groupby([pd.Grouper(freq=agg), cat_column]).mean()
+        df.reset_index(level=1, inplace=True)
+    else:
+        df = df.resample(agg).mean()
+
     if agg == "1H":
         agg_suffix = "hours"
-    else:
+    elif agg == "1D":
         agg_suffix = "days"
+    else:
+        agg_suffix = "months"
     return df, agg_suffix
 
 
-def draw_prediction_plot(results, agg_suffix):
+def draw_prediction_plot(results, agg_suffix, fig_path, img_timeseries_name):
 
     fig = go.Figure()
     fig.add_trace(
@@ -191,7 +222,7 @@ def draw_prediction_plot(results, agg_suffix):
             y=results[target_variable],
             mode="lines",
             name="Actual",
-            line=dict(color="grey"),
+            line=dict(color="grey", width=1),
         )
     )
     fig.add_trace(
@@ -200,7 +231,7 @@ def draw_prediction_plot(results, agg_suffix):
             y=results["prophet"],
             mode="lines",
             name="Prophet",
-            line=dict(color=col_red),
+            line=dict(color=col_red, width=1),
         )
     )
     fig.add_trace(
@@ -209,7 +240,7 @@ def draw_prediction_plot(results, agg_suffix):
             y=results["sarimax"],
             mode="lines",
             name="SARIMAX",
-            line=dict(color=col_blue),
+            line=dict(color=col_blue, width=1),
         )
     )
     fig.add_trace(
@@ -218,7 +249,7 @@ def draw_prediction_plot(results, agg_suffix):
             y=results["holtwinters"],
             mode="lines",
             name="Holt-Winters",
-            line=dict(color=col_magenta),
+            line=dict(color=col_magenta, width=1),
         )
     )
     fig.update_layout(
@@ -230,7 +261,7 @@ def draw_prediction_plot(results, agg_suffix):
     )
     fig.layout.template = template
     fig.write_image(
-        os.path.join(fig_path, img_chart_name + "_" + agg_suffix + ".png"),
+        os.path.join(fig_path, img_timeseries_name + "_" + agg_suffix + ".png"),
         width=img_width,
         height=img_height,
         scale=img_scale,
@@ -238,7 +269,7 @@ def draw_prediction_plot(results, agg_suffix):
     fig.show()
 
 
-def draw_metrics_table(results, agg_suffix):
+def draw_metrics_table(tests, results, agg_suffix, fig_path, img_table_name):
     index_type = ["Insample"] + [
         "Test {}".format(test_number) for test_number in range(1, tests + 1)
     ]
@@ -295,10 +326,15 @@ def draw_metrics_table(results, agg_suffix):
 def model_and_plot(
     data,
     agg_levels,
+    test_size,
+    tests,
     prophet_freq,
     sarimax_order,
     sarimax_seasonal_order,
     holtwinters_seasonal_periods,
+    fig_path,
+    img_timeseries_name,
+    img_table_name,
 ):
 
     # getting the right data aggregation
@@ -315,32 +351,47 @@ def model_and_plot(
         for test_number in range(1, tests + 1)
     ]
 
-    results = prophet_cv(results=results, freq=prophet_freq)
+    results = prophet_cv(
+        data=data, tests=tests, test_size=test_size, results=results, freq=prophet_freq
+    )
     results = sarimax_cv(
-        results=results, order=sarimax_order, seasonal_order=sarimax_seasonal_order
+        data=data,
+        tests=tests,
+        test_size=test_size,
+        results=results,
+        order=sarimax_order,
+        seasonal_order=sarimax_seasonal_order,
     )
     results = holtwinters_cv(
-        results=results, seasonal_periods=holtwinters_seasonal_periods
+        data=data,
+        tests=tests,
+        test_size=test_size,
+        results=results,
+        seasonal_periods=holtwinters_seasonal_periods,
     )
 
+    print(results)
     for agg in agg_levels:
 
-        results, agg_suffix = aggregate_df(results, agg)
-        draw_prediction_plot(results=results, agg_suffix=agg_suffix)
-        draw_metrics_table(results=results, agg_suffix=agg_suffix)
+        print(results)
+        results, agg_suffix = aggregate_df(results, agg, cat_column="type")
+        print(results)
+        draw_prediction_plot(
+            results=results,
+            agg_suffix=agg_suffix,
+            fig_path=fig_path,
+            img_timeseries_name=img_timeseries_name,
+        )
+        draw_metrics_table(
+            results=results,
+            tests=tests,
+            agg_suffix=agg_suffix,
+            fig_path=fig_path,
+            img_table_name=img_table_name,
+        )
 
 
 #%%
 
-model_and_plot(
-    data,
-    agg_levels=["1H", "1D"],
-    prophet_freq="H",
-    sarimax_order=(2, 1, 1),
-    sarimax_seasonal_order=(2, 0, 1, 24),
-    holtwinters_seasonal_periods=24,
-)
-
-
-#%%
-
+for model in models:
+    model_and_plot(**model)
