@@ -122,7 +122,7 @@ fig.add_trace(
 )
 fig.update_layout(
     yaxis=dict(zeroline=True),
-    xaxis_title="Date",
+    xaxis_title="",
     yaxis_title="Watt Hours",
     margin=go.layout.Margin(
         l=margin_l, r=margin_r, b=margin_b, t=margin_t, pad=margin_pad
@@ -252,7 +252,7 @@ for dataset, xaxis, img_name in zip(datasets, xaxis_list, img_names):
     )
     fig.update_layout(
         yaxis=dict(zeroline=True, range=[0, max(dataset["Unmeasured"]) + 1]),
-        xaxis_title=xaxis,
+        xaxis_title="",
         yaxis_title="Watt Hours",
         margin=go.layout.Margin(
             l=margin_l, r=margin_r, b=margin_b, t=margin_t, pad=margin_pad
@@ -410,7 +410,7 @@ for dataset, img_name in zip(datasets, img_names):
         )
     )
     fig.update_layout(
-        xaxis_title="Time",
+        xaxis_title="",
         yaxis_title="Watt Hours",
         xaxis=dict(tickmode="linear", tick0=0, dtick=24),
         yaxis=dict(range=(0, 60)),
