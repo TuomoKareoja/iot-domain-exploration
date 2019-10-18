@@ -48,7 +48,7 @@ fig_path = os.path.join("reports", "figures")
 
 data = load_processed_data()
 # 2006 has some weird ratings, so lets just use data from 2007 onwards
-data = data["2007"]
+data = data["2007-01-01 00:00:00":"2009-12-31 23:59:00"]
 
 #%%
 
@@ -59,32 +59,32 @@ target_variable = "Global_active_power"
 hourmodel = dict(
     data=data,
     test_size=24 * 30,
-    tests=2,
-    agg_levels=["1H", "1D", "1M"],
+    tests=3,
+    agg_levels=["1H", "1D", "30D"],
     fig_path=os.path.join("reports", "figures"),
     img_timeseries_name="model_comparison_timeseries_hourmodel",
-    img_table_name="model_comparison_table_daymodel",
+    img_table_name="model_comparison_table_hourmodel",
     prophet_freq="H",
     sarimax_order=(2, 1, 1),
     sarimax_seasonal_order=(2, 0, 1, 24),
     holtwinters_seasonal_periods=24,
 )
 
-# daymodel = dict(
-#     data=data,
-#     test_size=30,
-#     tests=2,
-#     agg_levels=["1D", "1M"],
-#     fig_path=os.path.join("reports", "figures"),
-#     img_timeseries_name="model_comparison_timeseries_daymodel",
-#     img_table_name="model_comparison_table_daymodel",
-#     prophet_freq="H",
-#     sarimax_order=(2, 1, 1),
-#     sarimax_seasonal_order=(2, 0, 1, 365),
-#     holtwinters_seasonal_periods=365,
-# )
+daymodel = dict(
+    data=data,
+    test_size=30,
+    tests=3,
+    agg_levels=["1D", "30D"],
+    fig_path=os.path.join("reports", "figures"),
+    img_timeseries_name="model_comparison_timeseries_daymodel",
+    img_table_name="model_comparison_table_daymodel",
+    prophet_freq="D",
+    sarimax_order=(2, 1, 1),
+    sarimax_seasonal_order=(1, 0, 1, 7),
+    holtwinters_seasonal_periods=7,
+)
 
-models = [hourmodel]
+models = [hourmodel, daymodel]
 
 #%%
 
@@ -93,7 +93,7 @@ def prophet_cv(data, tests, test_size, results, freq):
 
     for test_number in range(1, tests + 1):
 
-        test_split = len(data) - test_size * test_number
+        test_split = len(data) - test_size * (tests - test_number + 1)
 
         df_train = data[:test_split][[target_variable]]
 
@@ -130,7 +130,7 @@ def sarimax_cv(data, tests, test_size, results, order, seasonal_order):
 
     for test_number in range(1, tests + 1):
 
-        test_split = len(data) - test_size * test_number
+        test_split = len(data) - test_size * (tests - test_number + 1)
 
         df_train = data[:test_split][[target_variable]]
 
@@ -169,7 +169,7 @@ def holtwinters_cv(data, tests, test_size, results, seasonal_periods):
 
     for test_number in range(1, tests + 1):
 
-        test_split = len(data) - test_size * test_number
+        test_split = len(data) - test_size * (tests - test_number + 1)
 
         df_train = data[:test_split][[target_variable]]
 
@@ -193,6 +193,29 @@ def holtwinters_cv(data, tests, test_size, results, seasonal_periods):
             ]
 
     results["holtwinters"] = predictions
+
+    return results
+
+
+def average_cv(data, tests, test_size, results):
+
+    # for average we use only the data from the previous test period
+    for test_number in range(1, tests + 1):
+
+        split_start = len(data) - test_size * (tests - test_number + 2)
+        split_end = len(data) - test_size * (tests - test_number + 1)
+
+        df_train = data[split_start:split_end][[target_variable]]
+
+        mean = df_train[target_variable].mean()
+
+        # for the first test take also the insample predictions
+        if test_number == 1:
+            predictions = [mean] * test_size * 2
+        else:
+            predictions = predictions + [mean] * test_size
+
+    results["average"] = predictions
 
     return results
 
@@ -252,8 +275,39 @@ def draw_prediction_plot(results, agg_suffix, fig_path, img_timeseries_name):
             line=dict(color=col_magenta, width=1),
         )
     )
+    fig.add_trace(
+        go.Scatter(
+            x=results.index,
+            y=results["average"],
+            mode="lines",
+            name="Average",
+            line=dict(color="orange", width=1),
+        )
+    )
+    y_max = results.select_dtypes(include=["float"]).values.max() * 1.1
+    vlines = []
+    for i, start_point in enumerate(
+        results.reset_index().groupby("type")["Date_Time"].min().to_list()
+    ):
+        if i != 0:
+            vlines.append(
+                {
+                    "type": "line",
+                    "xref": "x",
+                    "yref": "y",
+                    "x0": start_point,
+                    "y0": 0,
+                    "x1": start_point,
+                    "y1": y_max,
+                    "line": dict(color="red", width=1),
+                }
+            )
+
+    fig.update_layout(shapes=vlines)
+
     fig.update_layout(
-        xaxis_title="Date",
+        yaxis=dict(rangemode="tozero"),
+        xaxis_title="",
         yaxis_title="Watt Hours",
         margin=go.layout.Margin(
             l=margin_l, r=margin_r, b=margin_b, t=margin_t, pad=margin_pad
@@ -273,25 +327,26 @@ def draw_metrics_table(tests, results, agg_suffix, fig_path, img_table_name):
     index_type = ["Insample"] + [
         "Test {}".format(test_number) for test_number in range(1, tests + 1)
     ]
-    index_type = index_type * 3
-    index_metric = ["MSE"] * (tests + 1) + ["MAE"] * (tests + 1) + ["R2"] * (tests + 1)
+    index_type = index_type * 2
+    index_metric = ["MSE"] * (tests + 1) + ["MAE"] * (tests + 1)
     index = pd.MultiIndex.from_arrays(
         [index_type, index_metric], names=("Type", "Metric")
     )
-    columns = ["Prophet", "SARIMAX", "Holt-Winters"]
+    columns = ["Prophet", "SARIMAX", "Holt-Winters", "Average"]
     result_metrics = pd.DataFrame(index=index, columns=columns)
 
-    models = ["prophet", "sarimax", "holtwinters"]
+    models = ["prophet", "sarimax", "holtwinters", "average"]
     for model, model_column in zip(models, columns):
         metrics = []
-        for metric in [mean_squared_error, mean_absolute_error, r2_score]:
+        for metric in [mean_squared_error, mean_absolute_error]:
             for type in results["type"].unique():
                 metrics.append(
                     round(
                         metric(
                             results.loc[results["type"] == type, target_variable],
                             results.loc[results["type"] == type, model],
-                        )
+                        ),
+                        2,
                     )
                 )
         result_metrics[model_column] = metrics
@@ -317,7 +372,7 @@ def draw_metrics_table(tests, results, agg_suffix, fig_path, img_table_name):
     fig.write_image(
         os.path.join(fig_path, img_table_name + "_" + agg_suffix + ".png"),
         width=img_width,
-        height=(img_height - 50) / 2,
+        height=(img_height - 60) / 2,
         scale=img_scale,
     )
     fig.show()
@@ -347,13 +402,14 @@ def model_and_plot(
     results = data[[target_variable]][-(test_size * (tests + 1)) :]
     results["type"] = ["insample"] * test_size + [
         "test_{}".format(test_number)
-        for _ in range(test_size)
         for test_number in range(1, tests + 1)
+        for _ in range(test_size)
     ]
 
     results = prophet_cv(
         data=data, tests=tests, test_size=test_size, results=results, freq=prophet_freq
     )
+
     results = sarimax_cv(
         data=data,
         tests=tests,
@@ -362,6 +418,7 @@ def model_and_plot(
         order=sarimax_order,
         seasonal_order=sarimax_seasonal_order,
     )
+
     results = holtwinters_cv(
         data=data,
         tests=tests,
@@ -370,20 +427,20 @@ def model_and_plot(
         seasonal_periods=holtwinters_seasonal_periods,
     )
 
-    print(results)
+    results = average_cv(data=data, tests=tests, test_size=test_size, results=results)
+
     for agg in agg_levels:
 
-        print(results)
-        results, agg_suffix = aggregate_df(results, agg, cat_column="type")
-        print(results)
+        results_agg, agg_suffix = aggregate_df(results, agg, cat_column="type")
+
         draw_prediction_plot(
-            results=results,
+            results=results_agg,
             agg_suffix=agg_suffix,
             fig_path=fig_path,
             img_timeseries_name=img_timeseries_name,
         )
         draw_metrics_table(
-            results=results,
+            results=results_agg,
             tests=tests,
             agg_suffix=agg_suffix,
             fig_path=fig_path,
