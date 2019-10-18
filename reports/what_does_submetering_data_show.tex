@@ -195,15 +195,15 @@ IOT Analytics \\ % Your institution for the title page
 
 
 %------------------------------------------------
-\section{What Can We See From the Data?}
+\section{Peak into Individual Days}
 %------------------------------------------------
 
 %------------------------------------------------
-\subsection{Use of Individual Household Items}
+\subsection{A Typical Summer Day}
 %------------------------------------------------
 
 \begin{frame}
-\frametitle{Use of Individual Household Items}
+\frametitle{A Typical Summer Day}
 
 \bigskip
 {
@@ -216,11 +216,11 @@ IOT Analytics \\ % Your institution for the title page
 \end{frame}
 
 %------------------------------------------------
-\subsection{Living Patterns}
+\subsection{Christmas Holiday}
 %------------------------------------------------
 
 \begin{frame}
-\frametitle{Living Patterns}
+\frametitle{Christmas Holiday}
 
 \bigskip
 {
@@ -241,7 +241,112 @@ IOT Analytics \\ % Your institution for the title page
 %------------------------------------------------
 
 \begin{frame}
-\frametitle{Predictive Analytics}
+\frametitle{Hour Level Model - Predicting Hours for One Month}
+
+\bigskip
+{
+    \centering
+    \includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{model_comparison_timeseries_hourmodel_hours.png}
+    \par
+}
+\bigskip
+
+\bigskip
+{
+    \centering
+    \includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{model_comparison_table_hourmodel_hours.png}
+    \par
+}
+\bigskip
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Hour Level Model - Predicting Days for One Month}
+
+\bigskip
+{
+    \centering
+    \includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{model_comparison_timeseries_hourmodel_days.png}
+    \par
+}
+\bigskip
+
+\bigskip
+{
+    \centering
+    \includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{model_comparison_table_hourmodel_days.png}
+    \par
+}
+\bigskip
+
+
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Hour Level Model - Predicting for One Month}
+
+\bigskip
+{
+    \centering
+    \includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{model_comparison_timeseries_hourmodel_months.png}
+    \par
+}
+\bigskip
+
+\bigskip
+{
+    \centering
+    \includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{model_comparison_table_hourmodel_months.png}
+    \par
+}
+\bigskip
+
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Day Level Model - Predicting Days for One Month}
+
+\bigskip
+{
+    \centering
+    \includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{model_comparison_timeseries_daymodel_days.png}
+    \par
+}
+\bigskip
+
+\bigskip
+{
+    \centering
+    \includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{model_comparison_table_daymodel_days.png}
+    \par
+}
+\bigskip
+
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Day Level Model - Predicting for One Month}
+
+\bigskip
+{
+    \centering
+    \includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{model_comparison_timeseries_daymodel_months.png}
+    \par
+}
+\bigskip
+
+\bigskip
+{
+    \centering
+    \includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{model_comparison_table_daymodel_months.png}
+    \par
+}
+\bigskip
+
 
 \end{frame}
 
@@ -254,18 +359,15 @@ IOT Analytics \\ % Your institution for the title page
 \frametitle{Conclusions}
 
 \begin{enumerate}
-    \item Energy use patterns are highly sensitive data that can be used to deduce:
+    \item Privacy!
     \begin{itemize}
-        \pause
-        \item When are people home
-        \pause
-        \item When do people cook
-        \pause
-        \item How often they shower
-        \item \ldots
+        \item Individual days show an intimate picture of how people live their lives
+        \item Even aggregated measures show private information
     \end{itemize}
-    \pause
-    \item Predictive modelling of total energy use
+    \item Security! \(\Rightarrow \) A burglar could see when somebody is at home
+    \item Categorizing patterns with a machine model would probably be possible, but would require
+    lots of manual effort, because we would have to label the observations ourselves
+    \item
 \end{enumerate}
 
 \end{frame}
